@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ApiClient } from '@/lib/api-client';
+import { getAllMenus } from '@/lib/menu-cache';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,7 +64,7 @@ export default function RolesPage() {
       const [rolesRes, permRes, menuRes] = await Promise.all([
         ApiClient.get('roles'),
         ApiClient.get('permissions').catch(() => []),
-        ApiClient.get('menus').catch(() => []),
+        getAllMenus(),
       ]);
       setRoles(rolesRes || []);
       setPermissions(permRes || []);

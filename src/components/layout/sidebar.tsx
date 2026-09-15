@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ApiClient } from '@/lib/api-client';
+import { getMenus } from '@/lib/menu-cache';
 import { useConstituencySettings } from '@/context/settings-context';
 import { useAuth } from '@/context/auth-context';
 import { useSidebar } from '@/context/sidebar-context';
@@ -21,65 +22,19 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-export interface MenuItem {
-  id: string;
-  label: string;
-  icon?: string;
-  path?: string;
-  children?: MenuItem[];
-  orderIndex?: number;
-}
-
-const fallbackMenus: MenuItem[] = [
-  { id: '1', label: 'Dashboard', icon: 'LuHouse', path: '/dashboard' },
-  {
-    id: '2',
-    label: 'Organization',
-    icon: 'LuNetwork',
-    children: [
-      { id: '2-1', label: 'Master Data', icon: 'LuLayers', path: '/organization/master-data' },
-      { id: '2-2', label: 'Directory', icon: 'LuUsers', path: '/organization/directory' },
-      { id: '2-3', label: 'Key Person', icon: 'LuStar', path: '/organization/key-person' },
-    ],
-  },
-  { id: '3', label: 'Urban Demographics', icon: 'LuBuilding2', path: '/demographics/urban' },
-  { id: '4', label: 'Rural Demographics', icon: 'LuLandmark', path: '/demographics/rural' },
-  {
-    id: '5',
-    label: 'Administration',
-    icon: 'LuShield',
-    children: [
-      { id: '5-1', label: 'Users', icon: 'LuUserCheck', path: '/users' },
-      { id: '5-2', label: 'Roles & Permissions', icon: 'LuKey', path: '/roles' },
-      { id: '5-3', label: 'Settings', icon: 'LuSettings', path: '/settings' },
-    ],
-  },
-];
+import { fallbackMenus, MenuItem } from '@/lib/menu-cache';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { settings, label, representativeType, portalName } = useConstituencySettings();
   const { user } = useAuth();
   const { isOpen, isCollapsed, toggleCollapsed, setIsOpen } = useSidebar();
-  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [menus, setMenus] = useState<MenuItem[]>(fallbackMenus);
   const [openGroup, setOpenGroup] = useState<string | null>('Organization');
 
   useEffect(() => {
-    async function loadMenus() {
-      try {
-        const data = await ApiClient.get<MenuItem[]>('menus/my');
-        if (Array.isArray(data) && data.length > 0) {
-          setMenus(data);
-        } else {
-          setMenus(fallbackMenus);
-        }
-      } catch (err) {
-        console.warn('Could not load user menu tree:', err);
-        setMenus(fallbackMenus);
-      }
-    }
-    loadMenus();
-  }, [user]);
+    getMenus().then(setMenus);
+  }, []);
 
   // Auto-expand group containing the current active pathname
   useEffect(() => {
