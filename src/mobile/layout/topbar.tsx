@@ -112,8 +112,12 @@ export function MobileTopbar() {
               type="button"
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/90 transition-all select-none shadow-2xs cursor-pointer"
             >
-              <div className="h-8 w-8 rounded-full bg-[#16a34a] text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                {getInitials(user?.fullName)}
+              <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 shadow-2xs">
+                <img
+                  src="/images/akash_profile.jpeg"
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="hidden sm:flex flex-col text-left">
                 <span className="text-xs font-extrabold text-slate-900 leading-tight">
