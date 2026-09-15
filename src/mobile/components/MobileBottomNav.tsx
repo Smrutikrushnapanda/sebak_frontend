@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
-  LuHome,
-  LuAlertTriangle,
+  LuHouse,
+  LuTriangleAlert,
   LuWrench,
   LuCalendar,
   LuLayoutGrid,
@@ -19,8 +19,8 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: <LuHome className="w-5 h-5" />, label: 'Home', path: '/mobile/dashboard' },
-  { icon: <LuAlertTriangle className="w-5 h-5" />, label: 'Issues', path: '/mobile/issues' },
+  { icon: <LuHouse className="w-5 h-5" />, label: 'Home', path: '/mobile/dashboard' },
+  { icon: <LuTriangleAlert className="w-5 h-5" />, label: 'Issues', path: '/mobile/issues' },
   { icon: <LuWrench className="w-5 h-5" />, label: 'Works', path: '/mobile/work-orders' },
   { icon: <LuCalendar className="w-5 h-5" />, label: 'Appts', path: '/mobile/appointments' },
   { icon: <LuLayoutGrid className="w-5 h-5" />, label: 'More', path: '/mobile/more' },
