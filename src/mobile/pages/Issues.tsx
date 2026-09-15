@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { MobileBottomNav } from '@/mobile/components/MobileBottomNav';
 
 
 const appStats = [
@@ -91,14 +91,6 @@ const desktopRows = [
   ['#KS-2025-061', 'School Boundary Wall Structural Crack', 'Tulati GP', 'Ashok Mohanty', 'Block Education Officer', 'Field Inspection 60%', 'View Report'],
   ['#KS-2025-045', 'TPCODL Phase Failure & Streetlight Pole', 'Jakhapura GP', 'Debendra Sahu', 'TPCODL SDO Vyasanagar', 'Due in 14 hrs', 'Alert Feeder'],
   ['#KS-2025-038', 'Madhu Babu Pension Direct Disbursal Delay', 'Barundei GP', 'Basanti Dei', 'BSSO Korei & Tahasildar', 'Bank Re-Verification 90%', 'Direct Credit'],
-];
-
-const bottomNav = [
-  ['dashboard', 'Home', '/mobile/dashboard'],
-  ['warning', 'Issues', '/mobile/issues'],
-  ['construction', 'Works', '/mobile/work-orders'],
-  ['calendar_month', 'Appts', '/mobile/appointments'],
-  ['grid_view', 'More', '/mobile/more'],
 ];
 
 function Icon({ name, className = '' }: { name: string; className?: string }) {
@@ -262,17 +254,7 @@ function AppIssuesView() {
         </section>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid h-[66px] grid-cols-5 border-t border-[#ece8f4] bg-white px-4 shadow-[0_-8px_24px_rgba(19,27,46,0.08)]">
-        {bottomNav.map(([icon, label, href]) => {
-          const active = label === 'Issues';
-          return (
-            <Link key={label} href={href} className={`flex flex-col items-center justify-center gap-1 text-[12px] ${active ? 'text-[#ff7119]' : 'text-[#3b2b28]'}`}>
-              <Icon name={icon} className="text-[23px]" />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      <MobileBottomNav />
     </div>
   );
 }

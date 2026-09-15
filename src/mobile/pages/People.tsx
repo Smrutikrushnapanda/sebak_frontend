@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
+import { MobileBottomNav } from '@/mobile/components/MobileBottomNav';
 
 
 interface Constituent {
@@ -92,14 +92,6 @@ const constituentData: Constituent[] = [
     ],
     history: 'Vyasanagar Mini Stadium memorandum submitted',
   },
-];
-
-const bottomNavItems = [
-  { label: 'Home', icon: 'dashboard', path: '/mobile/dashboard' },
-  { label: 'Issues', icon: 'warning', path: '/mobile/issues' },
-  { label: 'Works', icon: 'build', path: '/mobile/work-orders' },
-  { label: 'Appts', icon: 'calendar_today', path: '/mobile/appointments' },
-  { label: 'More', icon: 'grid_view', path: '/mobile/more' },
 ];
 
 export default function People() {
@@ -580,21 +572,7 @@ export default function People() {
           </div>
         </main>
 
-        {/* Fixed Mobile Bottom Navigation Bar */}
-        <nav className="fixed bottom-0 w-full z-50 pb-safe bg-[#faf8ff]/90 backdrop-blur-xl shadow-[0_-4px_16px_rgba(15,23,42,0.06)]">
-          <div className="max-w-md mx-auto flex items-center justify-around h-16 px-1">
-            {bottomNavItems.map((item) => (
-              <Link
-                key={item.path}
-                href={item.path}
-                className="flex-1 min-w-[44px] h-11 flex flex-col items-center justify-center gap-0.5 text-[#584237] hover:text-[#131b2e] transition-colors"
-              >
-                <span className="material-symbols-outlined text-xl">{item.icon}</span>
-                <span className="text-[10px] leading-tight">{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        </nav>
+        <MobileBottomNav />
       </div>
 
       {/* DESKTOP VIEW (719px AND ABOVE) - IDENTICAL RICH DESIGN */}

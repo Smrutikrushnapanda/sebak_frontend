@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useConstituencySettings } from '@/context/settings-context';
+import { MobileBottomNav } from '@/mobile/components/MobileBottomNav';
 
 export default function Dashboard() {
   const { settings } = useConstituencySettings();
@@ -10,69 +11,10 @@ export default function Dashboard() {
   const representativeName = settings?.representativeName || 'Shri Akash Dasnayak';
   const constituencyName = settings?.constituencyName || 'Korei Assembly Constituency';
 
-  const [lang, setLang] = useState<'EN' | 'OD'>('EN');
-
   return (
     <>
       {/* ── MOBILE VIEW (Screen width < 719px) ── */}
-      <div className="min-[719px]:hidden flex flex-col w-full min-h-screen bg-white relative pb-24">
-        {/* BEGIN: TopAppBar */}
-        <nav className="w-full px-4 py-2 flex items-center justify-end bg-white border-b border-gray-100 sticky top-0 z-20 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-          {/* Actions: Language Selector, Notification, Avatar */}
-          <div className="flex items-center space-x-2.5">
-            {/* Language Switcher Pill */}
-            <div className="flex items-center bg-[#F4F4F5] p-0.5 rounded-full text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => setLang('EN')}
-                className={`px-2.5 py-1 rounded-full text-[11px] leading-tight transition-all cursor-pointer ${
-                  lang === 'EN'
-                    ? 'bg-[#EA580C] text-white font-medium shadow-sm'
-                    : 'text-gray-600 font-normal'
-                }`}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                onClick={() => setLang('OD')}
-                className={`px-2 py-1 text-[11px] leading-tight transition-all cursor-pointer ${
-                  lang === 'OD'
-                    ? 'bg-[#EA580C] text-white rounded-full font-medium shadow-sm'
-                    : 'text-gray-600 font-normal'
-                }`}
-              >
-                ଓଡ଼ିଆ
-              </button>
-            </div>
-
-            {/* Notification Bell with Alert Dot */}
-            <Link href="/mobile/notifications" className="relative cursor-pointer p-1">
-              <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                />
-              </svg>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[#EF4444] rounded-full ring-2 ring-white" />
-            </Link>
-
-            {/* MLA Avatar with Active Status */}
-            <div className="relative">
-              <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-orange-200 bg-amber-100 flex items-center justify-center">
-                <img
-                  alt={representativeName}
-                  className="w-full h-full object-cover object-[75%_10%]"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5q650-66TJvRCqbsHKk05sD-7hgKphMdk-X9vQBk6swLPP_8l0F2EHlYSZfr1mdfn8DsgvrXjpl8JSsl8ONLZykGQEIabDE2U1xpoS_uk6b0-EHQFUduDoI3845QuyFAC9uNFhgXCxr7uQPy_rkxQlJ49wvxa_1djnN1Y1z__FQCMGwZYV_yrD3XLcDXrE_bpwWiSBuwGMUFpTSSiDin3Px5l8-PcaHT62iDn6e6dYNn8xAdfOupg7gRgYtJv7FuhuQ"
-                />
-              </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#10B981] border-2 border-white rounded-full" />
-            </div>
-          </div>
-        </nav>
-        {/* END: TopAppBar */}
+      <div className="min-[719px]:hidden flex flex-col w-full min-h-screen bg-white relative pb-20">
 
         {/* BEGIN: MainContent */}
         <main className="flex-1 w-full px-3.5 pt-3 pb-6 flex flex-col space-y-4">
@@ -468,70 +410,7 @@ export default function Dashboard() {
           </section>
         </main>
 
-        {/* FixedBottomNavigation */}
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-200/80 px-2 pt-2 pb-5 z-40 shadow-lg">
-          <div className="grid grid-cols-5 items-center">
-            <Link className="flex flex-col items-center group" href="/mobile/dashboard">
-              <div className="bg-[#FEECE3] text-orange-600 px-5 py-1 rounded-full flex items-center justify-center transition">
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 20 20">
-                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                </svg>
-              </div>
-              <span className="text-[11px] font-bold text-orange-600 mt-0.5">Home</span>
-            </Link>
-            <Link className="flex flex-col items-center text-slate-600 group" href="/mobile/issues">
-              <div className="px-3 py-1 flex items-center justify-center">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    clipRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    fillRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <span className="text-[11px] font-medium text-slate-600 mt-0.5">Issues</span>
-            </Link>
-            <Link className="flex flex-col items-center text-slate-600 group" href="/mobile/work-orders">
-              <div className="px-3 py-1 flex items-center justify-center">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    clipRule="evenodd"
-                    d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                    fillRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <span className="text-[11px] font-medium text-slate-600 mt-0.5">Works</span>
-            </Link>
-            <Link className="flex flex-col items-center text-slate-600 group" href="/mobile/appointments">
-              <div className="px-3 py-1 flex items-center justify-center">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                </svg>
-              </div>
-              <span className="text-[11px] font-medium text-slate-600 mt-0.5">Appointments</span>
-            </Link>
-            <Link className="flex flex-col items-center text-slate-600 group" href="/mobile/more">
-              <div className="px-3 py-1 flex items-center justify-center">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                </svg>
-              </div>
-              <span className="text-[11px] font-medium text-slate-600 mt-0.5">More</span>
-            </Link>
-          </div>
-          <div className="w-32 h-1 bg-slate-800 rounded-full mx-auto mt-2.5" />
-        </nav>
+        <MobileBottomNav />
       </div>
 
       {/* ── DESKTOP / LARGE SCREEN VIEW (Screen width >= 719px) ── */}

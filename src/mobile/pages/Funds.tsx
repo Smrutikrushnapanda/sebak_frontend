@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import { MobileBottomNav } from '@/mobile/components/MobileBottomNav';
 
 
 interface FundStream {
@@ -111,14 +111,6 @@ const transactionsData: Transaction[] = [
     type: 'disbursed',
     statusText: 'Disbursed',
   },
-];
-
-const bottomNavItems: { label: string; icon: string; path: string; active?: boolean }[] = [
-  { label: 'Home', icon: 'dashboard', path: '/mobile/dashboard' },
-  { label: 'Issues', icon: 'warning', path: '/mobile/issues' },
-  { label: 'Works', icon: 'build', path: '/mobile/work-orders' },
-  { label: 'Appts', icon: 'calendar_today', path: '/mobile/appointments' },
-  { label: 'More', icon: 'grid_view', path: '/mobile/more' },
 ];
 
 export default function Funds() {
@@ -367,23 +359,7 @@ export default function Funds() {
           </div>
         </main>
 
-        {/* Fixed Mobile Bottom Navigation Bar */}
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#FAF8FF]/95 backdrop-blur-xl border-t border-slate-200/80 px-4 py-2 pb-safe">
-          <div className="flex items-center justify-around max-w-md mx-auto">
-            {bottomNavItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.path}
-                className={`flex flex-col items-center gap-1 min-w-[56px] py-1 transition-colors ${
-                  item.active ? 'text-[#ff7722] font-bold' : 'text-[#584237] font-medium hover:text-[#131b2e]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-xl">{item.icon}</span>
-                <span className="text-[10px]">{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        </nav>
+        <MobileBottomNav />
       </div>
 
       {/* DESKTOP VIEW (719px AND ABOVE) */}
