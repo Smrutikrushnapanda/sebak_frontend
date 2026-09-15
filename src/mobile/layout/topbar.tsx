@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { useConstituencySettings } from '@/context/settings-context';
 import { useMobileSidebar } from '../context/sidebar-context';
+import { useLanguage } from '@/context/language-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,32 +25,39 @@ import {
   LuPanelLeftClose,
   LuPanelLeftOpen,
   LuGlobe,
+  LuDownload,
 } from 'react-icons/lu';
 
 export function MobileTopbar() {
   const { user, logout } = useAuth();
   const { settings, representativeType } = useConstituencySettings();
   const { isCollapsed, toggleCollapsed, toggleOpen } = useMobileSidebar();
-  const [lang, setLang] = useState<'EN' | 'OD'>('EN');
+  const { lang, setLang } = useLanguage();
 
   const representativeName = settings?.representativeName || 'Shri Akash Dasnayak';
   const constituencyName = settings?.constituencyName || 'Korei Assembly';
   const phoneDisplay = settings?.representativeMobileDisplay || '+91 94370 12345';
 
   return (
-    <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-2 flex items-center justify-between sticky top-0 z-30 shadow-2xs min-h-[58px]">
-      {/* Left Section: Sidebar Toggle & Representative Identity Badge */}
-      <div className="flex items-center gap-3">
+    <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-2 flex items-center justify-between sticky top-0 z-30 shadow-2xs min-h-[58px] relative">
+      {/* Left Section: Sidebar Toggle & Mobile Brand */}
+      <div className="flex items-center gap-2.5 z-10">
         {/* Mobile menu trigger */}
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden h-9 w-9 border border-orange-200/90 bg-[#fff5ee] text-[#f97316] hover:bg-orange-100/70 rounded-xl p-0 transition-colors"
+          className="lg:hidden h-9 w-9 border border-orange-200/90 bg-[#fff5ee] text-[#f97316] hover:bg-orange-100/70 rounded-xl p-0 transition-colors shrink-0"
           onClick={toggleOpen}
           aria-label="Toggle Navigation Menu"
         >
           <LuMenu className="w-5 h-5" />
         </Button>
+
+        {/* Mobile brand text */}
+        <div className="lg:hidden flex items-center gap-1 select-none">
+          <span className="text-[13px] font-black text-[#ea580c] tracking-tight">କୋରେଇ</span>
+          <span className="text-[13px] font-black text-[#16a34a] tracking-tight">ସେବକ</span>
+        </div>
 
         {/* Desktop Collapse button */}
         <button
@@ -65,8 +73,8 @@ export function MobileTopbar() {
           )}
         </button>
 
-        {/* Representative Header Badge Container - Hidden on mobile */}
-        <div className="hidden sm:flex items-center gap-2.5 bg-[#fff8f3] border border-orange-200/80 px-4 py-1.5 rounded-full shadow-2xs">
+        {/* Desktop Representative Badge */}
+        <div className="hidden lg:flex items-center gap-2.5 bg-[#fff8f3] border border-orange-200/80 px-4 py-1.5 rounded-full shadow-2xs">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-tight">
@@ -82,23 +90,30 @@ export function MobileTopbar() {
         </div>
       </div>
 
-      {/* Right Section: User Profile Dropdown */}
-      <div className="flex items-center gap-2">
-        {/* User Profile Dropdown */}
+      {/* Right Section: User Profile Dropdown with MLA Details */}
+      <div className="flex items-center gap-2 z-10">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               className="flex items-center gap-2 px-2 py-1 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 transition-all select-none shadow-2xs cursor-pointer"
             >
-              <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 shadow-2xs">
+              <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 shadow-2xs ring-1 ring-orange-200">
                 <img
                   src="/images/akash_profile.jpeg"
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <LuChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+              <div className="flex flex-col text-left leading-none max-w-[125px] sm:max-w-[180px]">
+                <span className="text-xs font-bold text-slate-900 truncate">
+                  {representativeName}
+                </span>
+                <span className="text-[10px] font-semibold text-orange-600 truncate mt-0.5">
+                  {representativeType || 'MLA'}, {constituencyName}
+                </span>
+              </div>
+              <LuChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
           </DropdownMenuTrigger>
 
@@ -155,6 +170,23 @@ export function MobileTopbar() {
                 </button>
               </div>
             </div>
+
+            <DropdownMenuSeparator className="my-1" />
+
+            <DropdownMenuItem
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('pwa:trigger-install'));
+                }
+              }}
+              className="flex items-center space-x-2.5 px-2.5 py-2 text-sm text-[#ea580c] hover:text-[#ea580c] hover:bg-orange-50/80 rounded-lg cursor-pointer font-bold"
+            >
+              <LuDownload className="w-4 h-4 text-[#ea580c]" />
+              <span>{lang === 'OD' ? 'ଆପ୍ ଡାଉନଲୋଡ୍ କରନ୍ତୁ' : 'Download App'}</span>
+              <span className="ml-auto bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                PWA
+              </span>
+            </DropdownMenuItem>
 
             <DropdownMenuSeparator className="my-1" />
 

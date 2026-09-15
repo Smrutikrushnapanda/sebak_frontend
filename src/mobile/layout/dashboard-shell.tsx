@@ -12,8 +12,8 @@ export function MobileDashboardShell({ children }: { children: React.ReactNode }
         <MobileSidebar />
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           <MobileTopbar />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-7">
-            <div className="max-w-7xl w-full mx-auto">{children}</div>
+          <main className="flex-1 overflow-y-auto overflow-x-hidden">
+            {children}
           </main>
         </div>
       </div>

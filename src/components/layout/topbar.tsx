@@ -112,8 +112,12 @@ export function Topbar() {
               type="button"
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/90 transition-all select-none shadow-2xs cursor-pointer"
             >
-              <div className="h-8 w-8 rounded-full bg-[#16a34a] text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                {getInitials(user?.fullName)}
+              <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 shadow-2xs">
+                <img
+                  src="/images/akash_profile.jpeg"
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="hidden sm:flex flex-col text-left">
                 <span className="text-xs font-extrabold text-slate-900 leading-tight">
@@ -129,12 +133,21 @@ export function Topbar() {
 
           <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl">
             <DropdownMenuLabel className="p-2">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-bold text-slate-900">{user?.fullName || 'Smrutikrushna Panda'}</p>
-                <p className="text-xs text-slate-500 font-mono">{user?.mobile || '+91 94370 12345'}</p>
-                <Badge variant="default" className="w-fit text-[10px] mt-1 font-semibold">
-                  {user?.role?.name || 'Administrator'}
-                </Badge>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full overflow-hidden shrink-0 shadow-2xs">
+                  <img
+                    src="/images/akash_profile.jpeg"
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-sm font-bold text-slate-900">{user?.fullName || 'Shri Akash Dasnayak'}</p>
+                  <p className="text-[10px] text-slate-500">{user?.mobile || '+91 94370 12345'}</p>
+                  <Badge variant="default" className="w-fit text-[10px] mt-1 font-semibold">
+                    {user?.role?.name || 'MLA'}
+                  </Badge>
+                </div>
               </div>
             </DropdownMenuLabel>
             

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useConstituencySettings } from '@/context/settings-context';
 import { useAuth } from '@/context/auth-context';
 import { useMobileSidebar } from '../context/sidebar-context';
+import { useLanguage } from '@/context/language-context';
 import { resolveIcon } from './icon-resolver';
 import {
   LuChevronDown,
@@ -23,6 +24,7 @@ import { Button } from '@/components/ui/button';
 export interface MenuItem {
   id: string;
   label: string;
+  translationKey?: string;
   icon?: string;
   path?: string;
   children?: MenuItem[];
@@ -34,39 +36,36 @@ export function MobileSidebar() {
   const { settings, label, representativeType, portalName } = useConstituencySettings();
   const { user } = useAuth();
   const { isOpen, isCollapsed, toggleCollapsed, setIsOpen } = useMobileSidebar();
-  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const { t } = useLanguage();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Static menu for the new web app — 13 pages
-    setMenus([
-      { id: '1', label: 'Dashboard', icon: 'LuHouse', path: '/mobile/dashboard' },
-      { id: '2', label: 'Issues', icon: 'LuCircleAlert', path: '/mobile/issues' },
-      { id: '3', label: 'Work Orders', icon: 'LuWrench', path: '/mobile/work-orders' },
-      { id: '4', label: 'Funds', icon: 'LuDatabase', path: '/mobile/funds' },
-      { id: '5', label: 'Appointments', icon: 'LuCalendar', path: '/mobile/appointments' },
-      { id: '6', label: 'Reminders', icon: 'LuClock', path: '/mobile/reminders' },
-      { id: '7', label: 'Notifications', icon: 'LuBell', path: '/mobile/notifications' },
-      { id: '8', label: 'Opinions', icon: 'LuMessageSquare', path: '/mobile/opinions' },
-      { id: '9', label: 'Important Links', icon: 'LuLink', path: '/mobile/important-links' },
-      { id: '10', label: 'Escalation', icon: 'LuTrendingUp', path: '/mobile/escalation' },
-      { id: '11', label: 'Reports', icon: 'LuChartBar', path: '/mobile/reports' },
-      { id: '12', label: 'Hierarchy', icon: 'LuNetwork', path: '/mobile/hierarchy' },
-      { id: '13', label: 'People', icon: 'LuUsers', path: '/mobile/people' },
-    ]);
-  }, [user]);
+  const menuItems: MenuItem[] = [
+    { id: '1', label: t('nav.home'), icon: 'LuHouse', path: '/mobile/dashboard' },
+    { id: '2', label: t('nav.issues'), icon: 'LuCircleAlert', path: '/mobile/issues' },
+    { id: '3', label: t('nav.works'), icon: 'LuWrench', path: '/mobile/work-orders' },
+    { id: '4', label: t('dashboard.funds'), icon: 'LuDatabase', path: '/mobile/funds' },
+    { id: '5', label: t('nav.appts'), icon: 'LuCalendar', path: '/mobile/appointments' },
+    { id: '6', label: t('sidebar.reminders'), icon: 'LuClock', path: '/mobile/reminders' },
+    { id: '7', label: t('sidebar.notifications'), icon: 'LuBell', path: '/mobile/notifications' },
+    { id: '8', label: t('sidebar.opinions'), icon: 'LuMessageSquare', path: '/mobile/opinions' },
+    { id: '9', label: t('sidebar.importantLinks'), icon: 'LuLink', path: '/mobile/important-links' },
+    { id: '10', label: t('sidebar.escalation'), icon: 'LuTrendingUp', path: '/mobile/escalation' },
+    { id: '11', label: t('dashboard.reports'), icon: 'LuChartBar', path: '/mobile/reports' },
+    { id: '12', label: t('dashboard.hierarchy'), icon: 'LuNetwork', path: '/mobile/hierarchy' },
+    { id: '13', label: t('dashboard.people'), icon: 'LuUsers', path: '/mobile/people' },
+  ];
 
   // Auto-expand group containing the current active pathname
   useEffect(() => {
-    if (menus.length > 0) {
-      const activeParent = menus.find((m) =>
+    if (menuItems.length > 0) {
+      const activeParent = menuItems.find((m) =>
         m.children?.some((c) => c.path && pathname.startsWith(c.path))
       );
       if (activeParent) {
         setOpenGroup(activeParent.label);
       }
     }
-  }, [pathname, menus]);
+  }, [pathname]);
 
   const toggleGroup = (groupLabel: string) => {
     setOpenGroup((prev) => (prev === groupLabel ? null : groupLabel));
@@ -80,7 +79,7 @@ export function MobileSidebar() {
 
   const renderNavList = () => (
     <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-      {menus.map((item) => {
+      {menuItems.map((item) => {
         const hasChildren = item.children && item.children.length > 0;
 
         if (hasChildren) {

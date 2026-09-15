@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { MobileBottomNav } from '@/mobile/components/MobileBottomNav';
+import { useLanguage } from '@/context/language-context';
 
 
 interface FundStream {
@@ -114,6 +115,7 @@ const transactionsData: Transaction[] = [
 ];
 
 export default function Funds() {
+  const { t } = useLanguage();
   const [downloading, setDownloading] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -132,28 +134,8 @@ export default function Funds() {
     <>
       {/* MOBILE VIEW (BELOW 719px) */}
       <div className="min-[719px]:hidden min-h-screen bg-[#faf8ff] font-['Plus_Jakarta_Sans',sans-serif] text-[#131b2e] flex flex-col relative w-full pb-20">
-        {/* Fixed Top Header */}
-        <header className="fixed top-0 w-full z-50 pt-safe bg-[#faf8ff]/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-          <div className="h-16 px-4 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <h1 className="font-bold text-base text-[#131b2e] truncate max-w-[200px]">Fund Allocations</h1>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="flex items-center bg-[#e2e7ff] p-0.5 rounded-full text-xs font-semibold">
-                <button aria-label="Switch to English" className="px-2.5 py-1 rounded-full bg-[#ff7722] text-white leading-none">EN</button>
-                <button aria-label="Switch to Odia" className="px-2.5 py-1 rounded-full text-[#584237] leading-none">ଓଡ଼ିଆ</button>
-              </div>
-              <div className="relative flex items-center justify-center">
-                <img alt="Profile" className="w-8 h-8 rounded-full object-cover ring-2 ring-[#ff7722]" src="https://lh3.googleusercontent.com/aida/AEtjO1U1Kx_eScSQYJs2VSC9t6JtflN0nRVU9CbFLUo5WVxp79LpXdakHZySIcm_hCLy4mbk1cgF3zhhQWpdF2YLA9lZFH_TPu7oo708acj_7yt16QXcphY6eIAhCo35rObsvjF8TJmwpfzZuFEUi_mnbcmsy-ZJodUSYYpCeURiZy7v9LtwRSZOBJQ9t3kE8liF3hHgGOuFTwK9-UmFvqNQQc9Ks8WwF1DFNtJTGD3XZk1tM1oIdVQUmHdSbi727uL6kaIyhmPzyc6DnQ" />
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#006c49] ring-2 ring-[#faf8ff]"></span>
-              </div>
-            </div>
-          </div>
-        </header>
-
         {/* Scrollable Mobile Body */}
-        <main className="flex-1 flex flex-col relative w-full pt-16 max-w-md mx-auto">
+        <main className="flex-1 flex flex-col relative w-full max-w-md mx-auto">
           <div className="flex flex-col w-full pb-8">
             {/* Sub-Header Status Bar */}
             <div className="px-4 pt-3 pb-2 flex items-center justify-between">
