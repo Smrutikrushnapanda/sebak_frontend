@@ -51,7 +51,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse
     { label: 'Escalation', path: '/mobile/escalation', icon: LuTrendingUp },
     { label: 'Reports', path: '/mobile/reports', icon: LuChartBar },
     { label: 'Hierarchy', path: '/mobile/hierarchy', icon: LuNetwork },
-    { label: 'People', path: '/mobile/people', icon: LuUsers },
+    { label: 'Organization', path: '/mobile/people', icon: LuUsers },
   ];
 
   const isActive = (path: string) => {

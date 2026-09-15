@@ -4,38 +4,26 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiClient } from '@/lib/api-client';
 import { useAuth } from '@/context/auth-context';
-import { useConstituencySettings } from '@/context/settings-context';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  LuSparkles,
-  LuPhone,
+  LuSmartphone,
   LuLock,
-  LuArrowRight,
-  LuShieldCheck,
   LuEye,
   LuEyeOff,
-  LuBuilding2,
-  LuUsers,
-  LuLayers,
-  LuMapPin,
-  LuCheck,
-  LuVote,
-  LuKeyRound,
+  LuArrowRight,
+  LuShieldCheck,
+  LuHeadphones,
+  LuQrCode,
 } from 'react-icons/lu';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const { settings, label, representativeType, portalName, isMP } = useConstituencySettings();
 
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,187 +45,198 @@ export default function LoginPage() {
     }
   };
 
+  const handleQrLogin = () => {
+    toast.info('QR Code login is initiating. Please scan with your Sevaka App.');
+  };
+
+  const handleContactAdmin = () => {
+    toast.info('Contact Admin: +91 94371 44810 | korei.sevaka@gov.in');
+  };
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-100 via-blue-50/40 to-orange-50/30 p-4 sm:p-6 lg:p-10 relative overflow-hidden">
-      {/* Background Decorative Rings & Glows */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary-300/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-orange-300/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-tr from-primary-100/30 to-transparent rounded-full blur-2xl pointer-events-none" />
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#f0f2f5] p-3 sm:p-6 lg:p-10 relative overflow-hidden font-sans select-none">
+      {/* Soft Ambient Radial Lights */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-orange-200/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+      {/* Main Authentication Card */}
+      <div className="w-full max-w-[1100px] bg-white rounded-3xl shadow-2xl shadow-slate-900/10 border border-slate-200/90 overflow-hidden relative z-10 flex flex-col lg:flex-row">
         
-        {/* Left Hero / Brand Showcase Card */}
-        <div className="hidden lg:flex lg:col-span-7 flex-col justify-between p-8 rounded-3xl bg-gradient-to-br from-primary-900 via-primary-800 to-slate-900 text-white shadow-2xl shadow-primary-950/20 border border-primary-700/50 relative overflow-hidden min-h-[580px]">
-          {/* Subtle Background Pattern */}
-          <div className="absolute inset-0 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:20px_20px] opacity-15" />
-          <div className="absolute -right-16 -top-16 w-64 h-64 bg-orange-500/15 rounded-full blur-2xl" />
-
-          {/* Top Header & Emblem */}
-          <div className="relative z-10">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-400 to-amber-300 flex items-center justify-center text-slate-950 shadow-lg shadow-orange-500/30 font-extrabold text-xl">
-                <LuVote className="w-6 h-6 text-slate-900" />
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-bold tracking-widest uppercase text-orange-400">
-                    Constituency Administration
-                  </span>
-                  <Badge className="bg-orange-500/20 text-orange-300 border-orange-400/30 text-[10px] uppercase font-extrabold">
-                    {representativeType} Portal
-                  </Badge>
-                </div>
-                <h2 className="text-xl font-bold tracking-tight text-white mt-0.5">
-                  {portalName}
-                </h2>
-              </div>
-            </div>
-
-            {/* Representative Details Badge */}
-            <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-inner mb-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-blue-200 uppercase font-semibold tracking-wider">Elected Representative</p>
-                  <p className="text-lg font-bold text-white mt-0.5">{settings?.representativeName || 'Honorable Representative'}</p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-200">
-                    <LuMapPin className="w-3.5 h-3.5 text-orange-400" />
-                    <span>{settings?.constituencyName} · {settings?.stateName || 'Odisha'}</span>
-                  </div>
-                </div>
-                <div className="px-3 py-1.5 rounded-xl bg-orange-500/20 border border-orange-400/40 text-orange-300 text-xs font-bold flex items-center gap-1.5">
-                  <LuSparkles className="w-3.5 h-3.5" />
-                  <span>Phase 1 Live</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature Highlights Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                <div className="flex items-center space-x-2.5 text-orange-300 mb-1.5">
-                  <LuLayers className="w-4 h-4" />
-                  <span className="font-semibold text-xs text-white">Hierarchy Mapping</span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  District, Blocks, Gram Panchayats, Villages, Wards & Polling Booths.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                <div className="flex items-center space-x-2.5 text-orange-300 mb-1.5">
-                  <LuUsers className="w-4 h-4" />
-                  <span className="font-semibold text-xs text-white">Cadre Directory</span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Party workers, booth presidents, coordinators & influential key persons.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Security & Role Badge */}
-          <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
-            <div className="flex items-center space-x-2">
-              <LuShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Role-Based Access Control & JWT Auth</span>
-            </div>
-            <span className="text-[11px] text-slate-400 font-mono">v1.0.0 Production</span>
-          </div>
+        {/* Left Hero Graphic Section */}
+        <div className="w-full lg:w-[54%] bg-[#fcf8f3] border-b lg:border-b-0 lg:border-r border-slate-200/80 flex items-stretch overflow-hidden relative">
+          <img
+            src="/images/login-left-artwork.png"
+            alt="Korei Sevaka - Shri Akash Dasnayak MLA"
+            className="w-full h-full object-cover block select-none"
+          />
         </div>
 
-        {/* Right Login Card */}
-        <div className="lg:col-span-5 flex flex-col justify-center">
-          <Card className="w-full shadow-2xl border-slate-200/80 bg-white/95 backdrop-blur-md rounded-3xl overflow-hidden">
-            <div className="h-2 bg-gradient-to-r from-primary-600 via-primary-500 to-orange-500" />
-            
-            <CardHeader className="space-y-1.5 text-center pt-6 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-primary-50 border border-primary-100 flex items-center justify-center text-primary-700 mx-auto mb-2 shadow-sm">
-                <LuKeyRound className="w-6 h-6" />
+        {/* Right Authentication Form Section */}
+        <div className="w-full lg:w-[46%] p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-white">
+          {/* Top Admin Helpline Option */}
+          <div className="flex items-center justify-end mb-4">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-400 font-medium">New here?</span>
+              <button
+                type="button"
+                onClick={handleContactAdmin}
+                className="px-3.5 py-1 rounded-full border border-orange-200 bg-[#fff5ee] text-[#ea580c] font-bold text-xs hover:bg-orange-100 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <LuHeadphones className="w-3.5 h-3.5 text-[#ea580c]" />
+                <span>Contact Admin</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Main Form Content */}
+          <div className="w-full max-w-sm mx-auto my-auto py-1">
+            <div className="mb-5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Welcome Back
+              </h1>
+              <p className="text-xs sm:text-sm font-bold text-slate-700 mt-1">
+                Login to your Korei Sevaka account
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Continue your journey of service and development.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {/* Mobile Input */}
+              <div className="space-y-1">
+                <label htmlFor="mobile" className="block text-xs font-bold text-slate-700">
+                  Mobile Number
+                </label>
+                <div className="relative">
+                  <LuSmartphone className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+                  <input
+                    id="mobile"
+                    type="tel"
+                    placeholder="Enter your registered mobile number"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value)}
+                    required
+                    className="w-full h-10 pl-10 pr-4 bg-white rounded-xl border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] transition-all"
+                  />
+                </div>
               </div>
-              <CardTitle className="text-xl font-bold text-slate-900 tracking-tight">
-                Sign In to Portal
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-500">
-                Enter your registered mobile number and secure password
-              </CardDescription>
-            </CardHeader>
 
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4 pt-1">
-                {/* Mobile Input */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="mobile" className="text-xs font-bold text-slate-700">
-                    Registered Mobile Number
-                  </Label>
-                  <div className="relative">
-                    <LuPhone className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="mobile"
-                      type="tel"
-                      placeholder="e.g. 9876543210"
-                      className="pl-10 h-10 text-sm bg-slate-50/60 border-slate-200 focus:bg-white focus:ring-2 focus:ring-primary-500/20 rounded-xl"
-                      value={mobile}
-                      onChange={(e) => setMobile(e.target.value)}
-                      required
-                    />
-                  </div>
+              {/* Password Input */}
+              <div className="space-y-1">
+                <label htmlFor="password" className="block text-xs font-bold text-slate-700">
+                  Password
+                </label>
+                <div className="relative">
+                  <LuLock className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full h-10 pl-10 pr-10 bg-white rounded-xl border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <LuEyeOff className="w-4 h-4" /> : <LuEye className="w-4 h-4" />}
+                  </button>
                 </div>
+              </div>
 
-                {/* Password Input */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-xs font-bold text-slate-700">
-                      Password
-                    </Label>
-                  </div>
-                  <div className="relative">
-                    <LuLock className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      className="pl-10 pr-10 h-10 text-sm bg-slate-50/60 border-slate-200 focus:bg-white focus:ring-2 focus:ring-primary-500/20 rounded-xl"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-700 transition-colors"
-                      title={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <LuEyeOff className="w-4 h-4" /> : <LuEye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-
-              <CardFooter className="flex flex-col space-y-3 pt-2 pb-6">
-                <Button
-                  type="submit"
-                  className="w-full h-11 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-600/25 transition-all active:scale-[0.99]"
-                  disabled={isLoading}
+              {/* Remember Me & Forgot Password */}
+              <div className="flex items-center justify-between pt-0.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-[#f97316] focus:ring-[#f97316]"
+                  />
+                  <span className="text-xs font-medium text-slate-600">Remember me</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => toast.info('Please contact your administrator to reset your password.')}
+                  className="text-xs font-bold text-[#ea580c] hover:text-[#c2410c] transition-colors cursor-pointer"
                 >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Authenticating Session...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <span>Sign In to Dashboard</span>
-                      <LuArrowRight className="w-4 h-4" />
-                    </div>
-                  )}
-                </Button>
+                  Forgot Password?
+                </button>
+              </div>
 
-                <p className="text-[11px] text-center text-slate-400 font-medium">
-                  Protected System · Authorized Representative Personnel Only
-                </p>
-              </CardFooter>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-11 bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:from-[#ea580c] hover:to-[#c2410c] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md shadow-orange-500/25 transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 mt-2"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Login</span>
+                    <LuArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+
+              {/* OR Divider */}
+              <div className="relative flex items-center justify-center my-2.5">
+                <div className="border-t border-slate-200 w-full" />
+                <span className="bg-white px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider relative">
+                  OR
+                </span>
+              </div>
+
+              {/* QR Code Login Button */}
+              <button
+                type="button"
+                onClick={handleQrLogin}
+                className="w-full h-10 bg-white hover:bg-[#fff5ee]/60 border border-slate-200/90 hover:border-orange-200 text-slate-800 font-bold text-xs rounded-xl shadow-2xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LuQrCode className="w-4 h-4 text-[#ea580c]" />
+                <span>Login with QR Code</span>
+              </button>
             </form>
-          </Card>
+
+            {/* Secure & Trusted Green Box */}
+            <div className="mt-4 p-3 rounded-2xl bg-[#f0fdf4] border border-emerald-100 flex items-start gap-2.5">
+              <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                <LuShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-bold text-slate-900 leading-tight">
+                  Secure &amp; Trusted
+                </p>
+                <p className="text-[10.5px] text-slate-500 font-medium leading-relaxed mt-0.5">
+                  Your data is safe with us. We use industry-standard encryption to protect your information.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Card Footer */}
+          <div className="pt-4 mt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10.5px] text-slate-400">
+            <div className="flex items-center gap-2.5">
+              <button type="button" onClick={() => toast.info('Privacy Policy')} className="hover:text-slate-600">Privacy Policy</button>
+              <span>|</span>
+              <button type="button" onClick={() => toast.info('Terms of Use')} className="hover:text-slate-600">Terms of Use</button>
+              <span>|</span>
+              <button type="button" onClick={() => toast.info('Help & Support')} className="hover:text-slate-600">Help & Support</button>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+              <img src="/images/lotus-img.png" alt="Lotus Logo" className="h-4 w-auto object-contain" />
+              <span>Korei Assembly</span>
+            </div>
+          </div>
         </div>
 
       </div>

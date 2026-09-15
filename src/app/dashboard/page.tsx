@@ -117,7 +117,7 @@ export default function DashboardPage() {
 
   const constituencyName = settings?.constituencyName || 'Korei Assembly';
   const representativeName = settings?.representativeName || 'Shri Akash Dasnayak';
-  const userName = user?.fullName || 'Smrutikrushna Panda';
+  const userName = user?.fullName || 'Shri Akash Dasnayak';
 
   return (
     <div className="space-y-6 pb-10 bg-[#f8fafc] -m-6 p-6 min-h-screen">
@@ -426,7 +426,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 pt-3 mt-4 text-center">
             <Link href="/organization/directory" className="flex flex-col items-center text-slate-600 hover:text-orange-600">
               <LuUsers className="w-4 h-4 mb-1" />
-              <span className="text-[11px] font-bold">People</span>
+              <span className="text-[11px] font-bold">Organization</span>
             </Link>
             <Link href="/organization/master-data" className="flex flex-col items-center text-slate-600 hover:text-orange-600">
               <LuLandmark className="w-4 h-4 mb-1" />

@@ -19,6 +19,7 @@ const gridFeatures = [
   { label: 'Escalation', icon: 'trending_up', path: '/mobile/escalation', bg: 'bg-[#ffe5e0]', color: 'text-[#e03810]' },
   { label: 'Reports', icon: 'bar_chart', path: '/mobile/reports', bg: 'bg-[#ffede4]', color: 'text-[#ff7722]' },
   { label: 'Hierarchy', icon: 'account_tree', path: '/mobile/hierarchy', bg: 'bg-[#ffede4]', color: 'text-[#ff7722]' },
+  { label: 'Organization', icon: 'groups', path: '/mobile/people', bg: 'bg-[#ffe5e0]', color: 'text-[#e03810]' },
   { label: 'Area Directory', icon: 'location_on', path: '/mobile/hierarchy', bg: 'bg-[#ffe5e0]', color: 'text-[#e03810]' },
 ];
 

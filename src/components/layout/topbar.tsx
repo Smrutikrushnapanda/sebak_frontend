@@ -121,7 +121,7 @@ export function Topbar() {
               </div>
               <div className="hidden sm:flex flex-col text-left">
                 <span className="text-xs font-extrabold text-slate-900 leading-tight">
-                  {user?.fullName || 'Smrutikrushna Panda'}
+                  {user?.fullName || 'Shri Akash Dasnayak'}
                 </span>
                 <span className="text-[10px] font-bold text-[#f97316] leading-none mt-0.5">
                   {user?.role?.name || 'Admin'}

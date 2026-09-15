@@ -52,7 +52,7 @@ export function MobileSidebar() {
     { id: '10', label: t('sidebar.escalation'), icon: 'LuTrendingUp', path: '/mobile/escalation' },
     { id: '11', label: t('dashboard.reports'), icon: 'LuChartBar', path: '/mobile/reports' },
     { id: '12', label: t('dashboard.hierarchy'), icon: 'LuNetwork', path: '/mobile/hierarchy' },
-    { id: '13', label: t('dashboard.people'), icon: 'LuUsers', path: '/mobile/people' },
+    { id: '13', label: t('dashboard.organization'), icon: 'LuUsers', path: '/mobile/people' },
   ];
 
   // Auto-expand group containing the current active pathname

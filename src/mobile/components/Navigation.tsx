@@ -17,7 +17,7 @@ export function Navigation() {
     { label: 'Escalation', path: '/mobile/escalation' },
     { label: 'Reports', path: '/mobile/reports' },
     { label: 'Hierarchy', path: '/mobile/hierarchy' },
-    { label: 'People', path: '/mobile/people' },
+    { label: 'Organization', path: '/mobile/people' },
   ];
 
   return (

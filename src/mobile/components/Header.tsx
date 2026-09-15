@@ -47,7 +47,7 @@ export function Header({ onToggleSidebar, pageTitle }: HeaderProps) {
     if (pathname.includes('/escalation')) return 'Escalation';
     if (pathname.includes('/reports')) return 'Reports';
     if (pathname.includes('/hierarchy')) return 'Hierarchy';
-    if (pathname.includes('/people')) return 'People';
+    if (pathname.includes('/people')) return 'Organization';
     return 'Dashboard';
   };
 

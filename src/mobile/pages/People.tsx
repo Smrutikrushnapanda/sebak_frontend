@@ -565,9 +565,9 @@ export default function People() {
               <span className="text-[#ff7722] font-bold">Korei AC-53 Registry</span>
             </div>
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-              Citizen Directory &amp; Delegate Index
+              Organization Directory &amp; Cadre Index
             </h1>
-            <p className="text-xs text-[#584237] mt-0.5">Verified constituent profiles across Korei constituency</p>
+            <p className="text-xs text-[#584237] mt-0.5">Verified organization, worker &amp; constituent profiles across Korei constituency</p>
           </div>
 
           <button
