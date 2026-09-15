@@ -2,11 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useMobileSidebar } from '../context/sidebar-context';
 import { useConstituencySettings } from '@/context/settings-context';
 
 export default function Dashboard() {
-  const { setIsOpen } = useMobileSidebar();
   const { settings } = useConstituencySettings();
 
   const representativeName = settings?.representativeName || 'Shri Akash Dasnayak';
@@ -19,20 +17,7 @@ export default function Dashboard() {
       {/* ── MOBILE VIEW (Screen width < 719px) ── */}
       <div className="min-[719px]:hidden flex flex-col w-full min-h-screen bg-white relative pb-24">
         {/* BEGIN: TopAppBar */}
-        <nav className="w-full px-4 py-2 flex items-center justify-between bg-white border-b border-gray-100 sticky top-0 z-20 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-          {/* Hamburger Menu Button */}
-          <button
-            type="button"
-            aria-label="Open Menu"
-            onClick={() => setIsOpen(true)}
-            className="text-slate-800 p-1.5 focus:outline-none hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-          >
-            <svg className="w-6 h-6 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-
-
+        <nav className="w-full px-4 py-2 flex items-center justify-end bg-white border-b border-gray-100 sticky top-0 z-20 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
           {/* Actions: Language Selector, Notification, Avatar */}
           <div className="flex items-center space-x-2.5">
             {/* Language Switcher Pill */}

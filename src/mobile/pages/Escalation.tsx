@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useMobileSidebar } from '../context/sidebar-context';
+
 
 interface EscalationItem {
   id: string;
@@ -81,7 +81,6 @@ const bottomNavItems = [
 ];
 
 export default function Escalation() {
-  const { setIsOpen } = useMobileSidebar();
   const [showRaiseModal, setShowRaiseModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -196,14 +195,6 @@ export default function Escalation() {
         <header className="fixed top-0 w-full z-50 pt-safe bg-[#faf8ff]/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
           <div className="h-16 px-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsOpen(true)}
-                aria-label="Open Drawer Menu"
-                className="w-10 h-10 flex items-center justify-center rounded-xl text-[#131b2e] hover:bg-[#e2e7ff] transition-colors"
-              >
-                <span className="material-symbols-outlined text-2xl">menu</span>
-              </button>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center bg-[#e2e7ff] p-0.5 rounded-full text-xs font-semibold">

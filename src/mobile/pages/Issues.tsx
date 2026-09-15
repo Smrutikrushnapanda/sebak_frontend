@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useMobileSidebar } from '../context/sidebar-context';
+
 
 const appStats = [
   { label: 'Overdue', value: '8', top: 'bg-[#b91c1c]', text: 'text-[#b91c1c]' },
@@ -175,19 +175,10 @@ function AppIssueCard({ issue }: { issue: (typeof appIssues)[number] }) {
 }
 
 function AppIssuesView() {
-  const { setIsOpen } = useMobileSidebar();
   return (
     <div className="min-[719px]:hidden min-h-screen bg-[#f8f6ff] pb-28 font-['Plus_Jakarta_Sans'] text-[#17111c]">
       <header className="sticky top-0 z-20 flex h-[80px] items-center justify-between border-b border-[#edeaf8] bg-[#fbf9ff]/95 px-5 shadow-sm backdrop-blur">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            className="flex h-9 w-9 items-center justify-center cursor-pointer"
-            aria-label="Open menu"
-          >
-            <Icon name="menu" className="text-[28px]" />
-          </button>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex overflow-hidden rounded-full bg-[#e9eaff] p-0.5 text-[11px] font-semibold">

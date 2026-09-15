@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useMobileSidebar } from '../context/sidebar-context';
+
 
 interface FundStream {
   id: string;
@@ -122,7 +122,6 @@ const bottomNavItems: { label: string; icon: string; path: string; active?: bool
 ];
 
 export default function Funds() {
-  const { setIsOpen } = useMobileSidebar();
   const [downloading, setDownloading] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -145,9 +144,6 @@ export default function Funds() {
         <header className="fixed top-0 w-full z-50 pt-safe bg-[#faf8ff]/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
           <div className="h-16 px-4 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setIsOpen(true)} aria-label="Open Drawer Menu" className="w-10 h-10 flex items-center justify-center rounded-xl text-[#131b2e] hover:bg-[#e2e7ff] transition-colors cursor-pointer">
-                <span className="material-symbols-outlined text-2xl">menu</span>
-              </button>
               <h1 className="font-bold text-base text-[#131b2e] truncate max-w-[200px]">Fund Allocations</h1>
             </div>
 
