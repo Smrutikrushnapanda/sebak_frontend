@@ -29,8 +29,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (tokenData: { accessToken: string; refreshToken: string; user: User }) => void;
-  logout: () => Promise<void>;
+  login: (tokenData: { accessToken: string; refreshToken: string; user: User }, redirectPath?: string) => void;
+  logout: (redirectPath?: string | unknown) => Promise<void>;
   hasPermission: (permissionKey: string) => boolean;
   refreshUser: () => Promise<void>;
 }
@@ -53,7 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     const token = ApiClient.getAccessToken();
-    if (!token) {
+    const refreshToken = ApiClient.getRefreshToken();
+    if (!token && !refreshToken) {
       setUser(null);
       setIsLoading(false);
       return;
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await ApiClient.get<User>('auth/me');
       setUser(data);
-    } catch (err) {
+    } catch {
       setUser(null);
       ApiClient.clearAuthTokens();
     } finally {
@@ -74,25 +75,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
-  const login = (tokenData: { accessToken: string; refreshToken: string; user: User }) => {
+  const login = (
+    tokenData: { accessToken: string; refreshToken: string; user: User },
+    redirectPath?: string,
+  ) => {
     ApiClient.setAuthTokens(tokenData.accessToken, tokenData.refreshToken);
     setUser(tokenData.user);
-    router.push('/dashboard');
+    if (redirectPath) {
+      router.push(redirectPath);
+    } else {
+      const isMobile = typeof window !== 'undefined' && window.location.pathname.startsWith('/mobile');
+      router.push(isMobile ? '/mobile' : '/dashboard');
+    }
   };
 
-  const logout = async () => {
+  const logout = async (redirectPath?: string | unknown) => {
     try {
       await ApiClient.post('auth/logout').catch(() => {});
     } finally {
       ApiClient.clearAuthTokens();
       setUser(null);
-      router.push('/login');
+      if (typeof redirectPath === 'string') {
+        router.push(redirectPath);
+      } else {
+        const isMobile = typeof window !== 'undefined' && window.location.pathname.startsWith('/mobile');
+        router.push(isMobile ? '/mobile/login' : '/login');
+      }
     }
   };
 
   const hasPermission = (permissionKey: string): boolean => {
     if (!user) return false;
-    if (user.role?.isSystem || user.role?.slug === 'admin' || user.role?.slug === 'mla-admin') {
+    if (user.role?.isSystem || user.role?.slug === 'admin' || user.role?.slug === 'mla' || user.role?.slug === 'mla-admin') {
       return true;
     }
     const permissions = user.role?.permissions?.map((p) => p.key) || [];

@@ -22,6 +22,8 @@ export interface ApiResponse<T = any> {
 }
 
 export class ApiClient {
+  private static refreshPromise: Promise<string | null> | null = null;
+
   private static getToken(): string | null {
     if (typeof window === 'undefined') return null;
     return (getCookie('mla_access_token') as string) || localStorage.getItem('mla_access_token') || null;
@@ -31,13 +33,18 @@ export class ApiClient {
     return this.getToken();
   }
 
+  static getRefreshToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return (getCookie('mla_refresh_token') as string) || localStorage.getItem('mla_refresh_token') || null;
+  }
+
   static setAuthTokens(accessToken: string, refreshToken?: string) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('mla_access_token', accessToken);
-      setCookie('mla_access_token', accessToken, { maxAge: 60 * 60 * 24 * 7 });
+      setCookie('mla_access_token', accessToken, { maxAge: 60 * 60 * 24 * 7, path: '/' });
       if (refreshToken) {
         localStorage.setItem('mla_refresh_token', refreshToken);
-        setCookie('mla_refresh_token', refreshToken, { maxAge: 60 * 60 * 24 * 30 });
+        setCookie('mla_refresh_token', refreshToken, { maxAge: 60 * 60 * 24 * 30, path: '/' });
       }
     }
   }
@@ -46,12 +53,61 @@ export class ApiClient {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('mla_access_token');
       localStorage.removeItem('mla_refresh_token');
-      deleteCookie('mla_access_token');
-      deleteCookie('mla_refresh_token');
+      deleteCookie('mla_access_token', { path: '/' });
+      deleteCookie('mla_refresh_token', { path: '/' });
     }
   }
 
-  static async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  static async refreshAccessToken(): Promise<string | null> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      this.clearAuthTokens();
+      return null;
+    }
+
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = (async () => {
+      try {
+        const apiBase = getApiBase();
+        const res = await fetch(`${apiBase}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!res.ok) {
+          this.clearAuthTokens();
+          return null;
+        }
+
+        const json = await res.json().catch(() => ({}));
+        const data =
+          json && typeof json === 'object' && 'data' in json && 'success' in json
+            ? json.data
+            : json;
+
+        if (data && data.accessToken) {
+          this.setAuthTokens(data.accessToken, data.refreshToken || refreshToken);
+          return data.accessToken as string;
+        }
+
+        this.clearAuthTokens();
+        return null;
+      } catch {
+        this.clearAuthTokens();
+        return null;
+      } finally {
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
+  }
+
+  static async request<T = any>(endpoint: string, options: RequestInit = {}, isRetry: boolean = false): Promise<T> {
     const token = this.getToken();
     const apiBase = getApiBase();
     const url = endpoint.startsWith('http') ? endpoint : `${apiBase}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
@@ -91,6 +147,19 @@ export class ApiClient {
     const json = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      // If 401 Unauthorized occurs on a non-auth endpoint, attempt token refresh and retry request
+      if (
+        response.status === 401 &&
+        !endpoint.includes('auth/login') &&
+        !endpoint.includes('auth/refresh') &&
+        !isRetry
+      ) {
+        const newAccessToken = await this.refreshAccessToken();
+        if (newAccessToken) {
+          return this.request<T>(endpoint, options, true);
+        }
+      }
+
       const errorMsg = json.message || `Request failed with status ${response.status}`;
       throw new Error(errorMsg);
     }

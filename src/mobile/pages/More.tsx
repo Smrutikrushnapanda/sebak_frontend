@@ -70,7 +70,7 @@ export default function MorePage() {
             <button
               onClick={() => {
                 if (typeof window !== 'undefined') {
-                  window.location.href = '/login';
+                  window.location.href = '/mobile/login';
                 }
               }}
               className="w-full py-3.5 px-4 bg-[#ffede4] hover:bg-[#ffd9cb] active:scale-[0.99] text-[#ff7722] rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-xs transition-all border border-[#ff7722]/20 cursor-pointer"
