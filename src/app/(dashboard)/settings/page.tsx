@@ -32,6 +32,13 @@ import {
   LuVote,
 } from 'react-icons/lu';
 
+// Mobile contact numbers accept digits only — exactly 10 digits. Anything else
+// (letters, symbols, a pasted "+91" prefix) is stripped, keeping the real number.
+const sanitizePhone = (value: string) => {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.length > 10 ? digits.slice(-10) : digits;
+};
+
 export default function SettingsPage() {
   const { settings, refreshSettings, updateSettingsState } = useConstituencySettings();
   const { states, getDistrictsByState, assemblyConstituencies, getAssembliesByDistrict } = useHierarchyStore();
@@ -74,7 +81,7 @@ export default function SettingsPage() {
       setFormName(settings.representativeName || '');
       setFormState(settings.stateName || 'Odisha');
       setFormDistrict(settings.districtName || 'Jajpur');
-      setFormMobile(settings.representativeMobileDisplay || '');
+      setFormMobile(sanitizePhone(settings.representativeMobileDisplay || ''));
       setFormAddress(settings.officeAddress || '');
 
       setFormAssemblyName(settings.assemblyName || settings.constituencyName || 'Korei Assembly');
@@ -783,12 +790,16 @@ export default function SettingsPage() {
                   <LuPhone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                   <Input
                     type="tel"
-                    placeholder="+91 94370 12345"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="e.g. 9437012345"
                     className="pl-9 h-10 text-xs font-semibold border-slate-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                     value={formMobile}
-                    onChange={(e) => setFormMobile(e.target.value)}
+                    onChange={(e) => setFormMobile(sanitizePhone(e.target.value))}
+                    aria-label="Office Contact Number"
                   />
                 </div>
+                <p className="text-[11px] font-semibold text-slate-400">10 digits only</p>
               </div>
             </div>
 

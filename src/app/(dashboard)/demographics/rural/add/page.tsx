@@ -24,6 +24,9 @@ import {
   LuSave,
 } from 'react-icons/lu';
 
+// Ward counts are capped at 3 digits (max 999 wards)
+const clampWardCount = (value: string) => value.replace(/\D/g, '').slice(0, 3);
+
 export default function RecordRuralDemographicsPage() {
   const router = useRouter();
   const { updatePanchayat, updateVillage, blocks, panchayats, villages } = useHierarchyStore();
@@ -40,6 +43,13 @@ export default function RecordRuralDemographicsPage() {
   const [gpSC, setGpSC] = useState('');
   const [gpOC, setGpOC] = useState('');
   const [gpWards, setGpWards] = useState('');
+
+  // "Total GP Population (2011)" is read-only — derived from Male + Female,
+  // falling back to the stored total when gender counts are empty
+  const gpMaleNum = Number(gpMale) || 0;
+  const gpFemaleNum = Number(gpFemale) || 0;
+  const gpLiveTotal =
+    gpMaleNum + gpFemaleNum > 0 ? gpMaleNum + gpFemaleNum : Number(gpTotal) || 0;
 
   // Available GPs for block
   const blockGPs = useMemo(() => {
@@ -115,7 +125,7 @@ export default function RecordRuralDemographicsPage() {
 
     const m = Number(gpMale) || 0;
     const f = Number(gpFemale) || 0;
-    const tot = Number(gpTotal) || (m + f > 0 ? m + f : 0);
+    const tot = m + f > 0 ? m + f : Number(gpTotal) || 0;
     const target = panchayats.find((p) => p.id === selectedGPId);
 
     updatePanchayat(selectedGPId, {
@@ -127,7 +137,7 @@ export default function RecordRuralDemographicsPage() {
       stPopulation: Number(gpST) || 0,
       scPopulation: Number(gpSC) || 0,
       ocPopulation: Number(gpOC) || 0,
-      wardCount: gpWards ? Number(gpWards) : undefined,
+      wardCount: gpWards ? Math.min(Number(gpWards) || 0, 999) : undefined,
     });
 
     toast.success(`Demographics for "${target?.name || 'Selected GP'}" saved successfully!`);
@@ -311,21 +321,28 @@ export default function RecordRuralDemographicsPage() {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Total GP Population (2011)</Label>
                   <Input
-                    type="number"
-                    value={gpTotal}
-                    onChange={(e) => setGpTotal(e.target.value)}
-                    placeholder="e.g. 8214"
-                    className="text-xs h-9 font-black text-slate-900 bg-slate-50"
+                    type="text"
+                    readOnly
+                    value={gpLiveTotal > 0 ? String(gpLiveTotal) : ''}
+                    placeholder="Auto (Male + Female)"
+                    title="Read-only — calculated from Male + Female population"
+                    className="text-xs h-9 font-black text-slate-900 bg-slate-100 cursor-not-allowed"
                   />
+                  <p className="text-[10px] font-semibold text-slate-400">
+                    Auto-calculated from Male + Female
+                  </p>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Number of Wards</Label>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={3}
                     value={gpWards}
-                    onChange={(e) => setGpWards(e.target.value)}
+                    onChange={(e) => setGpWards(clampWardCount(e.target.value))}
                     placeholder="e.g. 15"
+                    title="Maximum 3 digits (up to 999 wards)"
                     className="text-xs h-9"
                   />
                 </div>

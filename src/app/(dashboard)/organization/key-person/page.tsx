@@ -165,39 +165,54 @@ export default function KeyPersonPage() {
       return false;
     });
 
-    return [
+    const matched = [
       ...matchedBlocks.map((b) => ({ id: b.id, name: b.name, isULB: false, type: 'RURAL_BLOCK' })),
       ...matchedULBs.map((u) => ({ id: u.id, name: u.name, isULB: true, type: u.ulbType || 'MUNICIPALITY' })),
+    ];
+
+    // Never let the dropdowns go blank — if constituency scoping matches nothing
+    // (settings/hierarchy mismatch, stale local data), fall back to the full list
+    if (matched.length > 0) return matched;
+
+    return [
+      ...allBlocks.map((b) => ({ id: b.id, name: b.name, isULB: false, type: b.unitType || 'RURAL_BLOCK' })),
+      ...allULBs.map((u) => ({ id: u.id, name: u.name, isULB: true, type: u.ulbType || 'MUNICIPALITY' })),
     ];
   }, [allBlocks, allULBs, configuredAssemblies, isMP, filterAssemblyId]);
 
   const scopedBlockIds = useMemo(() => new Set(scopedBlocksAndULBs.map((b) => b.id)), [scopedBlocksAndULBs]);
 
   const scopedPanchayats = useMemo(() => {
-    return allPanchayats.filter((p) => scopedBlockIds.has(p.blockId));
+    const scoped = allPanchayats.filter((p) => scopedBlockIds.has(p.blockId));
+    return scoped.length > 0 ? scoped : allPanchayats;
   }, [allPanchayats, scopedBlockIds]);
 
   const scopedPanchayatIds = useMemo(() => new Set(scopedPanchayats.map((p) => p.id)), [scopedPanchayats]);
 
   const scopedVillages = useMemo(() => {
-    return allVillages.filter((v) => scopedPanchayatIds.has(v.panchayatId));
+    const scoped = allVillages.filter((v) => scopedPanchayatIds.has(v.panchayatId));
+    return scoped.length > 0 ? scoped : allVillages;
   }, [allVillages, scopedPanchayatIds]);
 
   const scopedVillageIds = useMemo(() => new Set(scopedVillages.map((v) => v.id)), [scopedVillages]);
 
   const scopedWards = useMemo(() => {
-    return allWards.filter((w) => {
+    const scoped = allWards.filter((w) => {
       if (w.parentType === 'ULB') {
         return scopedBlockIds.has(w.parentId);
       }
       return scopedVillageIds.has(w.parentId);
     });
+    return scoped.length > 0 ? scoped : allWards;
   }, [allWards, scopedBlockIds, scopedVillageIds]);
 
   const scopedWardIds = useMemo(() => new Set(scopedWards.map((w) => w.id)), [scopedWards]);
 
   const scopedBooths = useMemo(() => {
-    return allBooths.filter((b) => scopedWardIds.has(b.wardId));
+    const scoped = allBooths.filter(
+      (b) => scopedWardIds.has(b.wardId) || b.wardIds?.some((wid) => scopedWardIds.has(wid)),
+    );
+    return scoped.length > 0 ? scoped : allBooths;
   }, [allBooths, scopedWardIds]);
 
   // Cascading lists for filter UI
@@ -424,29 +439,67 @@ export default function KeyPersonPage() {
 
   // Filtered & Sorted Persons
   const filteredPersons = useMemo(() => {
+    const nameFor = (list: any[], id: string) => list.find((i) => i.id === id)?.name;
+
     let result = keyPersons.filter((p) => {
+      const loc = resolveLocation(p);
+
       if (search.trim()) {
         const q = search.trim().toLowerCase();
-        const matchesName = p.fullName?.toLowerCase().includes(q);
-        const matchesMobile = p.mobile?.includes(q);
-        const matchesDesignation = p.designation?.name?.toLowerCase().includes(q);
-        if (!matchesName && !matchesMobile && !matchesDesignation) return false;
+        const haystack = [
+          p.fullName,
+          p.mobile,
+          p.designation?.name,
+          loc.block,
+          loc.panchayat,
+          loc.village,
+          loc.ward,
+          loc.booth,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
       }
-      if (filterBlockId !== 'ALL' && p.orgUnitId !== filterBlockId) return false;
-      if (filterPanchayatId !== 'ALL' && p.panchayatId !== filterPanchayatId) return false;
-      if (filterVillageId !== 'ALL' && p.villageId !== filterVillageId) return false;
-      if (filterWardId !== 'ALL' && p.wardId !== filterWardId) return false;
-      if (filterBoothId !== 'ALL' && p.boothId !== filterBoothId) return false;
+
+      // Match by stored id first, then by resolved name for records saved without ids
+      if (filterBlockId !== 'ALL') {
+        const label = nameFor(scopedBlocksAndULBs, filterBlockId);
+        if (p.orgUnitId !== filterBlockId && (!label || loc.block !== label)) return false;
+      }
+      if (filterPanchayatId !== 'ALL') {
+        const label = nameFor(allPanchayats, filterPanchayatId);
+        if (p.panchayatId !== filterPanchayatId && (!label || loc.panchayat !== label)) return false;
+      }
+      if (filterVillageId !== 'ALL') {
+        const label = nameFor(allVillages, filterVillageId);
+        if (p.villageId !== filterVillageId && (!label || loc.village !== label)) return false;
+      }
+      if (filterWardId !== 'ALL') {
+        const label = nameFor(allWards, filterWardId);
+        if (p.wardId !== filterWardId && (!label || loc.ward !== label)) return false;
+      }
+      if (filterBoothId !== 'ALL') {
+        const label = nameFor(allBooths, filterBoothId);
+        if (p.boothId !== filterBoothId && (!label || loc.booth !== label)) return false;
+      }
       if (filterInfluence !== 'ALL' && p.influenceLevel !== filterInfluence) return false;
       return true;
     });
 
     const [sortField, sortDir] = sortKey.split(':');
+    const dir = sortDir === 'ASC' ? 1 : -1;
+
     result.sort((a, b) => {
       if (sortField === 'fullName') {
         const valA = (a.fullName || '').toLowerCase();
         const valB = (b.fullName || '').toLowerCase();
-        return sortDir === 'ASC' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        return valA.localeCompare(valB) * dir;
+      }
+      if (sortField === 'mobile') {
+        const valA = String(a.mobile || '');
+        const valB = String(b.mobile || '');
+        return valA.localeCompare(valB) * dir;
       }
       if (sortField === 'influenceLevel') {
         const priority: Record<string, number> = { HIGH: 3, MEDIUM: 2, NORMAL: 1, LOW: 1 };
@@ -470,6 +523,12 @@ export default function KeyPersonPage() {
     filterWardId,
     filterBoothId,
     filterInfluence,
+    resolveLocation,
+    scopedBlocksAndULBs,
+    allPanchayats,
+    allVillages,
+    allWards,
+    allBooths,
   ]);
 
   // Group by Block for Grid View

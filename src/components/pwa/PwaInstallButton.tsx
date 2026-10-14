@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/language-context';
 import {
   LuDownload,
@@ -19,6 +20,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function PwaInstallButton() {
   const { lang } = useLanguage();
+  const pathname = usePathname();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -93,6 +95,13 @@ export function PwaInstallButton() {
       setShowIosModal(true);
     }
   };
+
+  // The floating "Download App" button belongs to the mobile app experience only
+  const isMobileRoute = pathname === '/mobile' || !!pathname?.startsWith('/mobile/');
+
+  if (!isMobileRoute) {
+    return null;
+  }
 
   if (isInstalled && !showIosModal) {
     return null;

@@ -65,6 +65,15 @@ import {
 import { cn } from '@/lib/utils';
 import { useHierarchyStore } from '@/store/useHierarchyStore';
 
+// Last 10 digits, digits only — used to compare mobile numbers reliably
+const normalizeMobile = (value?: string | null) =>
+  String(value || '')
+    .replace(/\D/g, '')
+    .slice(-10);
+
+// 8888888888 / 7777777777 style dummy numbers are never real contacts
+const isDummyMobile = (mobile: string) => mobile.length === 10 && /^(\d)\1{9}$/.test(mobile);
+
 export default function DirectoryPage() {
   const { settings, isMP, isMLA, label } = useConstituencySettings();
   const {
@@ -153,39 +162,54 @@ export default function DirectoryPage() {
       return false;
     });
 
-    return [
+    const matched = [
       ...matchedBlocks.map((b) => ({ id: b.id, name: b.name, isULB: false, type: 'RURAL_BLOCK' })),
       ...matchedULBs.map((u) => ({ id: u.id, name: u.name, isULB: true, type: u.ulbType || 'MUNICIPALITY' })),
+    ];
+
+    // Never let the dropdowns go blank — if constituency scoping matches nothing
+    // (settings/hierarchy mismatch, stale local data), fall back to the full list
+    if (matched.length > 0) return matched;
+
+    return [
+      ...allBlocks.map((b) => ({ id: b.id, name: b.name, isULB: false, type: b.unitType || 'RURAL_BLOCK' })),
+      ...allULBs.map((u) => ({ id: u.id, name: u.name, isULB: true, type: u.ulbType || 'MUNICIPALITY' })),
     ];
   }, [allBlocks, allULBs, configuredAssemblies, isMP, filterAssemblyId]);
 
   const scopedBlockIds = useMemo(() => new Set(scopedBlocksAndULBs.map((b) => b.id)), [scopedBlocksAndULBs]);
 
   const scopedPanchayats = useMemo(() => {
-    return allPanchayats.filter((p) => scopedBlockIds.has(p.blockId));
+    const scoped = allPanchayats.filter((p) => scopedBlockIds.has(p.blockId));
+    return scoped.length > 0 ? scoped : allPanchayats;
   }, [allPanchayats, scopedBlockIds]);
 
   const scopedPanchayatIds = useMemo(() => new Set(scopedPanchayats.map((p) => p.id)), [scopedPanchayats]);
 
   const scopedVillages = useMemo(() => {
-    return allVillages.filter((v) => scopedPanchayatIds.has(v.panchayatId));
+    const scoped = allVillages.filter((v) => scopedPanchayatIds.has(v.panchayatId));
+    return scoped.length > 0 ? scoped : allVillages;
   }, [allVillages, scopedPanchayatIds]);
 
   const scopedVillageIds = useMemo(() => new Set(scopedVillages.map((v) => v.id)), [scopedVillages]);
 
   const scopedWards = useMemo(() => {
-    return allWards.filter((w) => {
+    const scoped = allWards.filter((w) => {
       if (w.parentType === 'ULB') {
         return scopedBlockIds.has(w.parentId);
       }
       return scopedVillageIds.has(w.parentId);
     });
+    return scoped.length > 0 ? scoped : allWards;
   }, [allWards, scopedBlockIds, scopedVillageIds]);
 
   const scopedWardIds = useMemo(() => new Set(scopedWards.map((w) => w.id)), [scopedWards]);
 
   const scopedBooths = useMemo(() => {
-    return allBooths.filter((b) => scopedWardIds.has(b.wardId));
+    const scoped = allBooths.filter(
+      (b) => scopedWardIds.has(b.wardId) || b.wardIds?.some((wid) => scopedWardIds.has(wid)),
+    );
+    return scoped.length > 0 ? scoped : allBooths;
   }, [allBooths, scopedWardIds]);
 
   const panchayatList = useMemo(() => {
@@ -273,6 +297,96 @@ export default function DirectoryPage() {
     [scopedBlocksAndULBs, allBlocks, allULBs, allPanchayats, allVillages, allWards, allBooths, settings],
   );
 
+  // Client-side filter + sort — guarantees the chosen sort order (A→Z / Z→A) and the
+  // dropdown filters always apply to what is on screen, even if the API ignores the
+  // params or the list came from the offline fallback data
+  const visibleMembers = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const nameFor = (list: any[], id: string) => list.find((i) => i.id === id)?.name;
+
+    const filtered = members.filter((m: any) => {
+      if (term) {
+        const loc = resolveLocation(m);
+        const haystack = [
+          m.fullName,
+          m.mobile,
+          m.designation?.name,
+          loc.block,
+          loc.panchayat,
+          loc.village,
+          loc.ward,
+          loc.booth,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+
+      if (filterAssemblyId !== 'ALL' && m.assemblyId && m.assemblyId !== filterAssemblyId) return false;
+      if (filterBlockId !== 'ALL') {
+        const label = nameFor(scopedBlocksAndULBs, filterBlockId);
+        if (m.orgUnitId !== filterBlockId && (!label || resolveLocation(m).block !== label)) return false;
+      }
+      if (filterPanchayatId !== 'ALL') {
+        const label = nameFor(allPanchayats, filterPanchayatId);
+        if (m.panchayatId !== filterPanchayatId && (!label || resolveLocation(m).panchayat !== label)) return false;
+      }
+      if (filterVillageId !== 'ALL') {
+        const label = nameFor(allVillages, filterVillageId);
+        if (m.villageId !== filterVillageId && (!label || resolveLocation(m).village !== label)) return false;
+      }
+      if (filterWardId !== 'ALL') {
+        const label = nameFor(allWards, filterWardId);
+        if (m.wardId !== filterWardId && (!label || resolveLocation(m).ward !== label)) return false;
+      }
+      if (filterBoothId !== 'ALL') {
+        const label = nameFor(allBooths, filterBoothId);
+        if (m.boothId !== filterBoothId && (!label || resolveLocation(m).booth !== label)) return false;
+      }
+      if (filterDesignationId !== 'ALL' && m.designationId !== filterDesignationId && m.designation?.id !== filterDesignationId) return false;
+      if (filterStatus !== 'ALL' && m.status !== filterStatus) return false;
+      if (filterInfluence !== 'ALL' && m.influenceLevel !== filterInfluence) return false;
+      if (filterKeyPerson !== 'ALL' && String(!!m.isKeyPerson) !== filterKeyPerson) return false;
+
+      return true;
+    });
+
+    const [sortField, sortDir] = sortKey.split(':');
+    const dir = sortDir === 'ASC' ? 1 : -1;
+
+    return [...filtered].sort((a, b) => {
+      if (sortField === 'fullName' || sortField === 'mobile') {
+        const valA = String(a[sortField] || '').toLowerCase();
+        const valB = String(b[sortField] || '').toLowerCase();
+        return valA.localeCompare(valB) * dir;
+      }
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return (dateA - dateB) * dir;
+    });
+  }, [
+    members,
+    search,
+    sortKey,
+    filterAssemblyId,
+    filterBlockId,
+    filterPanchayatId,
+    filterVillageId,
+    filterWardId,
+    filterBoothId,
+    filterDesignationId,
+    filterStatus,
+    filterInfluence,
+    filterKeyPerson,
+    resolveLocation,
+    scopedBlocksAndULBs,
+    allPanchayats,
+    allVillages,
+    allWards,
+    allBooths,
+  ]);
+
   // Modal states & Validation
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -300,8 +414,16 @@ export default function DirectoryPage() {
   const [formWardId, setFormWardId] = useState<string | undefined>();
   const [formBoothId, setFormBoothId] = useState<string | undefined>();
 
-  const [viewingMember, setViewingMember] = useState<any | null>(null);
-  const [memberToDelete, setMemberToDelete] = useState<any | null>(null);
+  // Live duplicate detection while typing (checked against the loaded directory list)
+  const mobileConflict = useMemo(() => {
+    const digits = normalizeMobile(formMobile);
+    if (digits.length !== 10) return null;
+    return (
+      members.find((m) => m.id !== editingMemberId && normalizeMobile(m.mobile) === digits) || null
+    );
+  }, [formMobile, members, editingMemberId]);
+
+  const [viewingMember, setViewingMember] = useState<any | null>(null);  const [memberToDelete, setMemberToDelete] = useState<any | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -326,6 +448,7 @@ export default function DirectoryPage() {
       const params: any = {
         sortBy: sortByField || 'createdAt',
         sortDir: sortDirVal || 'DESC',
+        pageSize: 100,
       };
 
       if (search.trim()) params.search = search.trim();
@@ -340,10 +463,23 @@ export default function DirectoryPage() {
       if (filterKeyPerson !== 'ALL') params.isKeyPerson = filterKeyPerson === 'TRUE';
 
       const res = await ApiClient.get('org-members', params);
-      const fetched = res.data || [];
+      let fetched = res.data || [];
+      let fetchedTotal = res.total || fetched.length;
+
+      // The server only searches name/mobile. If that found nothing, refetch without the
+      // term so the client-side search can also match designation and location fields.
+      if (params.search && fetched.length === 0) {
+        const { search: _search, ...rest } = params;
+        const retry = await ApiClient.get('org-members', rest).catch(() => null);
+        if (retry) {
+          fetched = retry.data || [];
+          fetchedTotal = retry.total || fetched.length;
+        }
+      }
+
       if (fetched.length > 0) {
         setMembers(fetched);
-        setTotalCount(res.total || fetched.length);
+        setTotalCount(fetchedTotal);
       } else {
         // Fallback sample members matching design reference image
         const defaultMembers = [
@@ -425,7 +561,7 @@ export default function DirectoryPage() {
   // Toggle Select All
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(members.map((m) => m.id));
+      setSelectedIds(visibleMembers.map((m) => m.id));
     } else {
       setSelectedIds([]);
     }
@@ -507,6 +643,26 @@ export default function DirectoryPage() {
     return getBoothsByWard(formWardId);
   }, [formWardId, getBoothsByWard]);
 
+  // Look up an existing member with this mobile number (loaded list first, then the API)
+  const findMemberByMobile = useCallback(
+    async (mobile: string, excludeId?: string | null) => {
+      const localHit = members.find(
+        (m) => m.id !== excludeId && normalizeMobile(m.mobile) === mobile,
+      );
+      if (localHit) return localHit;
+
+      try {
+        const res = await ApiClient.get('org-members', { search: mobile, pageSize: 50 });
+        const list: any[] = res?.data || [];
+        return list.find((m) => m.id !== excludeId && normalizeMobile(m.mobile) === mobile) || null;
+      } catch {
+        // Backend unreachable — the local list check above already applied
+        return null;
+      }
+    },
+    [members],
+  );
+
   // Save Form Handler
   const handleSaveForm = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -520,6 +676,26 @@ export default function DirectoryPage() {
     const digitsOnly = formMobile.replace(/\D/g, '');
     if (digitsOnly.length !== 10 || !/^[6-9]\d{9}$/.test(digitsOnly)) {
       setFormErrors((prev) => ({ ...prev, mobile: 'Enter a valid 10-digit Indian mobile number' }));
+      return;
+    }
+
+    if (isDummyMobile(digitsOnly)) {
+      setFormErrors((prev) => ({
+        ...prev,
+        mobile: 'This looks like a dummy number (same digit repeated) — enter a real mobile number',
+      }));
+      return;
+    }
+
+    // Mobile numbers must be unique across the directory
+    const duplicate = await findMemberByMobile(
+      digitsOnly,
+      formMode === 'edit' ? editingMemberId : null,
+    );
+    if (duplicate) {
+      const message = `Mobile number already exists in the directory — assigned to "${duplicate.fullName}"`;
+      setFormErrors((prev) => ({ ...prev, mobile: message }));
+      toast.error('Duplicate mobile numbers are not allowed');
       return;
     }
 
@@ -555,7 +731,18 @@ export default function DirectoryPage() {
 
     try {
       if (formMode === 'create') {
-        const created = await ApiClient.post('org-members', payload).catch(() => null);
+        let created: any = null;
+        try {
+          created = await ApiClient.post('org-members', payload);
+        } catch (err: any) {
+          const msg = String(err?.message || '');
+          if (/already exists|duplicate/i.test(msg)) {
+            setFormErrors((prev) => ({ ...prev, mobile: msg }));
+            toast.error(msg);
+            return;
+          }
+          created = null; // offline / other failure → keep the local fallback below
+        }
         toast.success(`Added ${formFullName.trim()} to directory`);
         if (created) {
           setMembers((prev) => [created, ...prev]);
@@ -568,7 +755,17 @@ export default function DirectoryPage() {
           setMembers((prev) => [newMember, ...prev]);
         }
       } else if (editingMemberId) {
-        await ApiClient.patch(`org-members/${editingMemberId}`, payload).catch(() => null);
+        try {
+          await ApiClient.patch(`org-members/${editingMemberId}`, payload);
+        } catch (err: any) {
+          const msg = String(err?.message || '');
+          if (/already exists|duplicate/i.test(msg)) {
+            setFormErrors((prev) => ({ ...prev, mobile: msg }));
+            toast.error(msg);
+            return;
+          }
+          // offline / other failure → still apply the change locally below
+        }
         toast.success(`Updated ${formFullName.trim()}`);
         setMembers((prev) =>
           prev.map((m) =>
@@ -605,7 +802,7 @@ export default function DirectoryPage() {
 
   // Export to CSV
   const exportToCSV = () => {
-    if (members.length === 0) {
+    if (visibleMembers.length === 0) {
       toast.error('No data to export');
       return;
     }
@@ -623,7 +820,7 @@ export default function DirectoryPage() {
       'Polling Ward',
       'Polling Booth',
     ];
-    const rows = members.map((m) => {
+    const rows = visibleMembers.map((m) => {
       const loc = resolveLocation(m);
       return [
         `"${m.fullName}"`,
@@ -957,7 +1154,7 @@ export default function DirectoryPage() {
               <tr>
                 <th className="py-3.5 px-4 w-10 text-center">
                   <Checkbox
-                    checked={selectedIds.length > 0 && selectedIds.length === members.length}
+                    checked={visibleMembers.length > 0 && selectedIds.length === visibleMembers.length}
                     onCheckedChange={(checked) => handleSelectAll(!!checked)}
                     className="border-orange-300 data-[state=checked]:bg-orange-500"
                   />
@@ -983,7 +1180,13 @@ export default function DirectoryPage() {
                     </div>
                   </td>
                 </tr>
-              ) : members.map((m, idx: number) => {
+              ) : visibleMembers.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="py-14 text-center text-slate-400 text-sm">
+                    No members match the current search or filters.
+                  </td>
+                </tr>
+              ) : visibleMembers.map((m, idx: number) => {
                 const loc = resolveLocation(m);
                 const isChecked = selectedIds.includes(m.id);
 
@@ -1140,8 +1343,8 @@ export default function DirectoryPage() {
         {/* Pagination Footer */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-100 bg-white text-xs text-slate-600">
           <div className="font-semibold text-slate-500">
-            Showing <span className="font-extrabold text-slate-900">1</span> to{' '}
-            <span className="font-extrabold text-slate-900">{members.length}</span> of{' '}
+            Showing <span className="font-extrabold text-slate-900">{visibleMembers.length === 0 ? 0 : 1}</span> to{' '}
+            <span className="font-extrabold text-slate-900">{visibleMembers.length}</span> of{' '}
             <span className="font-extrabold text-slate-900">{totalCount}</span> entries
           </div>
 
@@ -1207,10 +1410,12 @@ export default function DirectoryPage() {
                 <Label className="text-xs font-extrabold text-slate-700">Mobile Number *</Label>
                 <Input
                   placeholder="e.g. 9876543210"
+                  inputMode="numeric"
                   maxLength={10}
                   value={formMobile}
                   onChange={(e) => {
-                    setFormMobile(e.target.value);
+                    // Digits only, maximum 10 characters
+                    setFormMobile(e.target.value.replace(/\D/g, '').slice(0, 10));
                     if (formErrors.mobile) setFormErrors((prev) => ({ ...prev, mobile: undefined }));
                   }}
                   className={cn(
@@ -1218,8 +1423,18 @@ export default function DirectoryPage() {
                     formErrors.mobile && 'border-rose-500 focus:border-rose-500',
                   )}
                 />
-                {formErrors.mobile && (
+                {formErrors.mobile ? (
                   <p className="text-[11px] font-bold text-rose-500">{formErrors.mobile}</p>
+                ) : mobileConflict ? (
+                  <p className="text-[11px] font-bold text-amber-600 flex items-start gap-1.5">
+                    <LuTriangleAlert className="w-3.5 h-3.5 shrink-0 mt-px" />
+                    <span>
+                      Already registered to {mobileConflict.fullName} — duplicate numbers are not
+                      allowed.
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] font-semibold text-slate-400">10 digits only</p>
                 )}
               </div>
 

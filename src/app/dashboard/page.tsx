@@ -45,28 +45,43 @@ export default function DashboardPage() {
     async function fetchDashboardData() {
       setIsLoading(true);
       try {
-        const [memberStatsRes, recentMembersRes] = await Promise.all([
-          ApiClient.get('org-members/stats').catch(() => ({
-            totalMembers: 0,
-            activeMembers: 0,
-            keyPersons: 2,
-            designationCounts: [],
-          })),
-          ApiClient.get('org-members', { pageSize: 5, sortBy: 'createdAt', sortDir: 'DESC' }).catch(() => ({
-            data: [],
-          })),
+        const [memberStatsRes, membersRes, keyPersonsRes] = await Promise.all([
+          ApiClient.get('org-members/stats').catch(() => null),
+          ApiClient.get('org-members', { pageSize: 100, sortBy: 'createdAt', sortDir: 'DESC' }).catch(
+            () => null,
+          ),
+          ApiClient.get('org-members/key-persons').catch(() => null),
         ]);
 
-        setStats({
-          totalMembers: memberStatsRes.totalMembers || 0,
-          activeMembers: memberStatsRes.activeMembers || 0,
-          keyPersons: memberStatsRes.keyPersons ?? 2,
-          designationCounts: memberStatsRes.designationCounts || [],
-        });
+        const fetchedMembers: any[] = membersRes?.data || [];
+        const membersTotal: number = membersRes?.total ?? fetchedMembers.length;
+        const keyPersonList: any[] = Array.isArray(keyPersonsRes) ? keyPersonsRes : [];
 
-        const fetchedMembers = recentMembersRes.data || [];
-        if (fetchedMembers.length > 0) {
-          setRecentMembers(fetchedMembers);
+        // The stats endpoint reports both `total`/`active` and `totalMembers`/`activeMembers`.
+        // Accept either shape (plus a live count from the members list) so the cards are
+        // never stuck at 0. Key persons ARE members, so the total always includes them.
+        const totalMembers = memberStatsRes?.totalMembers ?? memberStatsRes?.total ?? membersTotal ?? 0;
+        const activeMembers = memberStatsRes?.activeMembers ?? memberStatsRes?.active ?? 0;
+        const keyPersons = memberStatsRes?.keyPersons ?? keyPersonList.length ?? 0;
+
+        // Designation distribution — derived from the members list when the API omits it
+        let designationCounts: { name: string; count: number }[] = memberStatsRes?.designationCounts || [];
+        if (designationCounts.length === 0 && fetchedMembers.length > 0) {
+          const counts = new Map<string, number>();
+          fetchedMembers.forEach((m: any) => {
+            const name = m?.designation?.name || 'Unassigned';
+            counts.set(name, (counts.get(name) || 0) + 1);
+          });
+          designationCounts = Array.from(counts.entries())
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+        }
+
+        setStats({ totalMembers, activeMembers, keyPersons, designationCounts });
+
+        const recentMembersList = fetchedMembers.slice(0, 5);
+        if (recentMembersList.length > 0) {
+          setRecentMembers(recentMembersList);
         } else {
           // Fallback sample members matching design reference
           setRecentMembers([

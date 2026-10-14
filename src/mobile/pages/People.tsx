@@ -490,9 +490,11 @@ export default function People() {
                 <input
                   type="tel"
                   required
+                  inputMode="numeric"
+                  maxLength={10}
                   placeholder="9876543210"
                   value={formMobile}
-                  onChange={(e) => setFormMobile(e.target.value)}
+                  onChange={(e) => setFormMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   className="w-full h-10 px-3 rounded-xl bg-slate-50 text-slate-900 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316]"
                 />
               </div>

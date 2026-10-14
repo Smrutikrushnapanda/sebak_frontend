@@ -48,6 +48,9 @@ import {
   LuLayers,
 } from 'react-icons/lu';
 
+// Ward counts are capped at 3 digits (max 999 wards)
+const clampWardCount = (value: string) => value.replace(/\D/g, '').slice(0, 3);
+
 export default function RuralDemographicsPage() {
   const {
     panchayats,
@@ -88,6 +91,13 @@ export default function RuralDemographicsPage() {
   const [gpSC, setGpSC] = useState('');
   const [gpOC, setGpOC] = useState('');
   const [gpWards, setGpWards] = useState('');
+
+  // "Total GP Pop (2011)" is read-only — derived from Male + Female,
+  // falling back to the stored total when gender counts are empty
+  const gpMaleNum = Number(gpMale) || 0;
+  const gpFemaleNum = Number(gpFemale) || 0;
+  const gpLiveTotal =
+    gpMaleNum + gpFemaleNum > 0 ? gpMaleNum + gpFemaleNum : Number(gpTotal) || 0;
 
   // Village Record & Edit Form Fields
   const [recordVBlockId, setRecordVBlockId] = useState('126013008');
@@ -253,7 +263,7 @@ export default function RuralDemographicsPage() {
     if (!editingGP) return;
     const m = Number(gpMale) || 0;
     const f = Number(gpFemale) || 0;
-    const tot = Number(gpTotal) || (m + f > 0 ? m + f : 0);
+    const tot = m + f > 0 ? m + f : Number(gpTotal) || 0;
 
     updatePanchayat(editingGP.id, {
       malePopulation: m,
@@ -264,7 +274,7 @@ export default function RuralDemographicsPage() {
       stPopulation: Number(gpST) || 0,
       scPopulation: Number(gpSC) || 0,
       ocPopulation: Number(gpOC) || 0,
-      wardCount: gpWards ? Number(gpWards) : undefined,
+      wardCount: gpWards ? Math.min(Number(gpWards) || 0, 999) : undefined,
     });
     toast.success(`Demographics for "${editingGP.name}" updated successfully!`);
     setEditingGP(null);
@@ -279,7 +289,7 @@ export default function RuralDemographicsPage() {
     const targetGP = panchayats.find((p) => p.id === recordGPId);
     const m = Number(gpMale) || 0;
     const f = Number(gpFemale) || 0;
-    const tot = Number(gpTotal) || (m + f > 0 ? m + f : 0);
+    const tot = m + f > 0 ? m + f : Number(gpTotal) || 0;
 
     updatePanchayat(recordGPId, {
       malePopulation: m,
@@ -290,7 +300,7 @@ export default function RuralDemographicsPage() {
       stPopulation: Number(gpST) || 0,
       scPopulation: Number(gpSC) || 0,
       ocPopulation: Number(gpOC) || 0,
-      wardCount: gpWards ? Number(gpWards) : undefined,
+      wardCount: gpWards ? Math.min(Number(gpWards) || 0, 999) : undefined,
     });
     toast.success(`Demographics for "${targetGP?.name || 'Selected GP'}" saved successfully!`);
     setIsRecordGPModalOpen(false);
@@ -1000,20 +1010,27 @@ export default function RuralDemographicsPage() {
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-slate-700">Total GP Pop (2011)</Label>
                 <Input
-                  type="number"
-                  value={gpTotal}
-                  onChange={(e) => setGpTotal(e.target.value)}
-                  placeholder="Total"
-                  className="text-xs h-9 font-black text-slate-900 bg-slate-50"
+                  type="text"
+                  readOnly
+                  value={gpLiveTotal > 0 ? String(gpLiveTotal) : ''}
+                  placeholder="Auto (Male + Female)"
+                  title="Read-only — calculated from Male + Female population"
+                  className="text-xs h-9 font-black text-slate-900 bg-slate-100 cursor-not-allowed"
                 />
+                <p className="text-[10px] font-semibold text-slate-400">
+                  Auto-calculated from Male + Female
+                </p>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-slate-700">Number of Wards</Label>
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={3}
                   value={gpWards}
-                  onChange={(e) => setGpWards(e.target.value)}
+                  onChange={(e) => setGpWards(clampWardCount(e.target.value))}
                   placeholder="e.g. 15"
+                  title="Maximum 3 digits (up to 999 wards)"
                   className="text-xs h-9"
                 />
               </div>
@@ -1276,20 +1293,27 @@ export default function RuralDemographicsPage() {
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-slate-700">Total GP Pop (2011)</Label>
                 <Input
-                  type="number"
-                  value={gpTotal}
-                  onChange={(e) => setGpTotal(e.target.value)}
-                  placeholder="Total"
-                  className="text-xs h-9 font-black text-slate-900 bg-slate-50"
+                  type="text"
+                  readOnly
+                  value={gpLiveTotal > 0 ? String(gpLiveTotal) : ''}
+                  placeholder="Auto (Male + Female)"
+                  title="Read-only — calculated from Male + Female population"
+                  className="text-xs h-9 font-black text-slate-900 bg-slate-100 cursor-not-allowed"
                 />
+                <p className="text-[10px] font-semibold text-slate-400">
+                  Auto-calculated from Male + Female
+                </p>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-slate-700">Number of Wards</Label>
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={3}
                   value={gpWards}
-                  onChange={(e) => setGpWards(e.target.value)}
+                  onChange={(e) => setGpWards(clampWardCount(e.target.value))}
                   placeholder="e.g. 15"
+                  title="Maximum 3 digits (up to 999 wards)"
                   className="text-xs h-9"
                 />
               </div>

@@ -42,16 +42,95 @@ import {
   LuTrash2,
   LuEye,
   LuEllipsisVertical,
-  LuSearch,
   LuVote,
   LuCircleCheck,
   LuUser,
 } from 'react-icons/lu';
 
+// 2011 census → 2027 projection growth factor (~44.1%)
+const PROJECTION_FACTOR = 1.44;
+
+const toNum = (value: string) => Number(value) || 0;
+
+const projectPopulation = (total: number) => Math.round(total * PROJECTION_FACTOR);
+
+const toPercent = (value: number, total: number) =>
+  total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+
+// Live preview strip shown inside the record/edit modals
+function CensusLiveSummary({
+  male,
+  female,
+  census2011,
+  census2027,
+}: {
+  male: number;
+  female: number;
+  census2011: number;
+  census2027: number;
+}) {
+  const total = male + female;
+  const growth =
+    census2011 > 0 ? (((census2027 - census2011) / census2011) * 100).toFixed(1) : '0.0';
+
+  return (
+    <div className="rounded-xl border border-primary-100 bg-primary-50/50 p-3 space-y-2">
+      <p className="text-[10px] font-extrabold uppercase tracking-wider text-primary-700">
+        Auto-calculated Preview
+      </p>
+      <p className="text-[10px] font-medium text-slate-500 -mt-1">
+        Census 2011, 2027 projection &amp; shares update automatically when Male / Female changes.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-white rounded-lg border border-slate-200 px-2.5 py-2">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Total</p>
+          <p className="text-sm font-black text-slate-900">
+            {(census2011 || total).toLocaleString('en-IN')}
+          </p>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 px-2.5 py-2">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+            2027 Projected
+          </p>
+          <p className="text-sm font-black text-orange-600">
+            {(census2027 || projectPopulation(total)).toLocaleString('en-IN')}
+            <span className="text-[10px] font-bold text-orange-500 ml-1">+{growth}%</span>
+          </p>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 px-2.5 py-2">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+            Male Share
+          </p>
+          <p className="text-sm font-black text-blue-600">
+            {toPercent(male, total)}%
+            <span className="text-[10px] font-semibold text-slate-400 ml-1">
+              {male.toLocaleString('en-IN')}
+            </span>
+          </p>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 px-2.5 py-2">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+            Female Share
+          </p>
+          <p className="text-sm font-black text-rose-500">
+            {toPercent(female, total)}%
+            <span className="text-[10px] font-semibold text-slate-400 ml-1">
+              {female.toLocaleString('en-IN')}
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const wardSearchFilter = (w: WardItem, query: string) =>
+  w.name.toLowerCase().includes(query) ||
+  String(w.wardNumber ?? '').toLowerCase().includes(query);
+
 export default function UrbanDemographicsPage() {
   const { wards, booths, updateWard, deleteWard } = useHierarchyStore();
 
-  const [searchTerm, setSearchTerm] = useState('');
   const [editingWard, setEditingWard] = useState<WardItem | null>(null);
   const [viewingWard, setViewingWard] = useState<WardItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -65,6 +144,31 @@ export default function UrbanDemographicsPage() {
   const [formFemale, setFormFemale] = useState('');
   const [formCensus2011, setFormCensus2011] = useState('');
   const [formCensus2027, setFormCensus2027] = useState('');
+
+  // Keep Census 2011 total, 2027 projection & percentages in sync with Male + Female
+  const syncCensusFromGender = (maleRaw: string, femaleRaw: string) => {
+    const total = toNum(maleRaw) + toNum(femaleRaw);
+    if (total <= 0) return;
+    setFormCensus2011(String(total));
+    setFormCensus2027(String(projectPopulation(total)));
+  };
+
+  const handleMaleChange = (value: string) => {
+    setFormMale(value);
+    syncCensusFromGender(value, formFemale);
+  };
+
+  const handleFemaleChange = (value: string) => {
+    setFormFemale(value);
+    syncCensusFromGender(formMale, value);
+  };
+
+  // Live values driving the modal preview
+  const liveMale = toNum(formMale);
+  const liveFemale = toNum(formFemale);
+  const liveTotal = liveMale + liveFemale;
+  const liveCensus2011 = toNum(formCensus2011) || liveTotal;
+  const liveCensus2027 = toNum(formCensus2027) || projectPopulation(liveCensus2011);
 
   // Filter only Urban Wards (Vyasanagar Municipality)
   const urbanWards = useMemo(() => {
@@ -89,17 +193,6 @@ export default function UrbanDemographicsPage() {
     }
   }, [selectedWardId, urbanWards]);
 
-  // Filtered by search
-  const filteredWards = useMemo(() => {
-    if (!searchTerm.trim()) return urbanWards;
-    const term = searchTerm.toLowerCase();
-    return urbanWards.filter(
-      (w) =>
-        w.name.toLowerCase().includes(term) ||
-        (w.wardNumber && String(w.wardNumber).includes(term)),
-    );
-  }, [urbanWards, searchTerm]);
-
   // Aggregate Stats
   const stats = useMemo(() => {
     const totalWards = urbanWards.length;
@@ -112,8 +205,33 @@ export default function UrbanDemographicsPage() {
       urbanWards.some((uw) => uw.id === b.wardId),
     ).length;
 
-    return { totalWards, totalMale, totalFemale, total2011, total2027, totalBooths };
+    return {
+      totalWards,
+      totalMale,
+      totalFemale,
+      total2011,
+      total2027,
+      totalBooths,
+      // Denominator for male/female share — census total, or male+female when census is empty
+      pctBase: total2011 > 0 ? total2011 : totalMale + totalFemale,
+      growthPct:
+        total2011 > 0 ? (((total2027 - total2011) / total2011) * 100).toFixed(1) : '0.0',
+    };
   }, [urbanWards, booths]);
+
+  // Always read the freshest ward record so the details modal reflects live edits
+  const viewedWard = useMemo(
+    () => (viewingWard ? wards.find((w) => w.id === viewingWard.id) ?? viewingWard : null),
+    [viewingWard, wards],
+  );
+
+  const viewedMale = viewedWard?.malePopulation || 0;
+  const viewedFemale = viewedWard?.femalePopulation || 0;
+  const viewedTotal = viewedMale + viewedFemale || viewedWard?.census2011Population || 0;
+  const viewed2011 = viewedWard?.census2011Population || 0;
+  const viewed2027 = viewedWard?.census2027Population || 0;
+  const viewedGrowth =
+    viewed2011 > 0 ? (((viewed2027 - viewed2011) / viewed2011) * 100).toFixed(1) : '0.0';
 
   // Open Edit Modal for a specific row
   const handleOpenEdit = (ward: WardItem) => {
@@ -147,15 +265,15 @@ export default function UrbanDemographicsPage() {
   const handleSaveEdit = () => {
     if (!editingWard) return;
 
-    const male = Number(formMale) || 0;
-    const female = Number(formFemale) || 0;
-    const sum2011 = Number(formCensus2011) || (male + female > 0 ? male + female : 0);
+    const male = toNum(formMale);
+    const female = toNum(formFemale);
+    const sum2011 = toNum(formCensus2011) || (male + female > 0 ? male + female : 0);
 
     updateWard(editingWard.id, {
       malePopulation: male,
       femalePopulation: female,
       census2011Population: sum2011,
-      census2027Population: Number(formCensus2027) || Math.round(sum2011 * 1.44),
+      census2027Population: toNum(formCensus2027) || projectPopulation(sum2011),
     });
 
     toast.success(`Demographics for "${editingWard.name}" updated successfully!`);
@@ -170,15 +288,15 @@ export default function UrbanDemographicsPage() {
     }
 
     const targetWard = urbanWards.find((w) => w.id === selectedWardId);
-    const male = Number(formMale) || 0;
-    const female = Number(formFemale) || 0;
-    const sum2011 = Number(formCensus2011) || (male + female > 0 ? male + female : 0);
+    const male = toNum(formMale);
+    const female = toNum(formFemale);
+    const sum2011 = toNum(formCensus2011) || (male + female > 0 ? male + female : 0);
 
     updateWard(selectedWardId, {
       malePopulation: male,
       femalePopulation: female,
       census2011Population: sum2011,
-      census2027Population: Number(formCensus2027) || Math.round(sum2011 * 1.44),
+      census2027Population: toNum(formCensus2027) || projectPopulation(sum2011),
     });
 
     toast.success(`Demographics for "${targetWard?.name || 'Selected Ward'}" saved successfully!`);
@@ -207,7 +325,7 @@ export default function UrbanDemographicsPage() {
       'Census 2027 (Approx)',
     ];
 
-    const rows = filteredWards.map((w) => [
+    const rows = urbanWards.map((w) => [
       w.wardNumber || '',
       `"${w.name}"`,
       w.malePopulation || 0,
@@ -439,7 +557,7 @@ export default function UrbanDemographicsPage() {
           <div>
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">2027 PROJECTED</p>
             <h3 className="text-2xl sm:text-3xl font-black text-[#f97316] mt-0.5">{stats.total2027.toLocaleString('en-IN')}</h3>
-            <span className="text-xs font-bold text-[#f97316] mt-1 block">+44.1% Growth</span>
+            <span className="text-xs font-bold text-[#f97316] mt-1 block">+{stats.growthPct}% Growth</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-orange-100/60 border border-orange-200/80 text-[#f97316] flex items-center justify-center shrink-0">
             <LuTrendingUp className="w-6 h-6 text-[#f97316]" />
@@ -452,7 +570,7 @@ export default function UrbanDemographicsPage() {
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">MALE POPULATION</p>
             <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-0.5">{stats.totalMale.toLocaleString('en-IN')}</h3>
             <span className="text-xs font-medium text-slate-500 mt-1 block">
-              {stats.total2011 > 0 ? ((stats.totalMale / stats.total2011) * 100).toFixed(1) : 0}% of Total
+              {toPercent(stats.totalMale, stats.pctBase)}% of Total
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-blue-50/80 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0">
@@ -466,7 +584,7 @@ export default function UrbanDemographicsPage() {
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">FEMALE POPULATION</p>
             <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-0.5">{stats.totalFemale.toLocaleString('en-IN')}</h3>
             <span className="text-xs font-medium text-slate-500 mt-1 block">
-              {stats.total2011 > 0 ? ((stats.totalFemale / stats.total2011) * 100).toFixed(1) : 0}% of Total
+              {toPercent(stats.totalFemale, stats.pctBase)}% of Total
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-rose-50/80 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
@@ -475,30 +593,15 @@ export default function UrbanDemographicsPage() {
         </Card>
       </div>
 
-      {/* Main Data Table */}
-      <Card className="rounded-2xl border border-slate-200 shadow-sm overflow-hidden bg-white">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
-          <div className="relative w-full sm:w-80">
-            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search ward name or number..."
-              className="pl-9 text-xs h-9 bg-white"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-white text-slate-700 border border-slate-200 text-xs font-semibold px-2.5 py-1">
-              Showing {filteredWards.length} of {urbanWards.length} Wards
-            </Badge>
-          </div>
-        </div>
-
+      {/* Main Data Table — single search box lives inside DataTable */}
+      <Card className="rounded-2xl border border-slate-200 shadow-sm overflow-hidden bg-white p-4">
         <DataTable
           columns={columns}
-          data={filteredWards}
+          data={urbanWards}
           defaultPageSize={30}
+          searchPlaceholder="Search ward name or number..."
+          searchFilter={wardSearchFilter}
+          emptyMessage="No ward matches your search"
         />
       </Card>
 
@@ -537,7 +640,7 @@ export default function UrbanDemographicsPage() {
                 <Input
                   type="number"
                   value={formMale}
-                  onChange={(e) => setFormMale(e.target.value)}
+                  onChange={(e) => handleMaleChange(e.target.value)}
                   placeholder="e.g. 855"
                   className="text-xs h-9"
                 />
@@ -547,7 +650,7 @@ export default function UrbanDemographicsPage() {
                 <Input
                   type="number"
                   value={formFemale}
-                  onChange={(e) => setFormFemale(e.target.value)}
+                  onChange={(e) => handleFemaleChange(e.target.value)}
                   placeholder="e.g. 755"
                   className="text-xs h-9"
                 />
@@ -576,6 +679,13 @@ export default function UrbanDemographicsPage() {
                 />
               </div>
             </div>
+
+            <CensusLiveSummary
+              male={liveMale}
+              female={liveFemale}
+              census2011={liveCensus2011}
+              census2027={liveCensus2027}
+            />
           </div>
 
           <DialogFooter className="gap-2">
@@ -619,7 +729,7 @@ export default function UrbanDemographicsPage() {
                 <Input
                   type="number"
                   value={formMale}
-                  onChange={(e) => setFormMale(e.target.value)}
+                  onChange={(e) => handleMaleChange(e.target.value)}
                   placeholder="e.g. 855"
                   className="text-xs h-9"
                 />
@@ -629,7 +739,7 @@ export default function UrbanDemographicsPage() {
                 <Input
                   type="number"
                   value={formFemale}
-                  onChange={(e) => setFormFemale(e.target.value)}
+                  onChange={(e) => handleFemaleChange(e.target.value)}
                   placeholder="e.g. 755"
                   className="text-xs h-9"
                 />
@@ -658,6 +768,13 @@ export default function UrbanDemographicsPage() {
                 />
               </div>
             </div>
+
+            <CensusLiveSummary
+              male={liveMale}
+              female={liveFemale}
+              census2011={liveCensus2011}
+              census2027={liveCensus2027}
+            />
           </div>
 
           <DialogFooter className="gap-2">
@@ -688,37 +805,53 @@ export default function UrbanDemographicsPage() {
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <LuBuilding2 className="w-5 h-5 text-primary-600" />
-              <span>{viewingWard?.name}</span>
+              <span>{viewedWard?.name}</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
               Vyasanagar Municipality Ward Census Profile
             </DialogDescription>
           </DialogHeader>
 
-          {viewingWard && (
+          {viewedWard && (
             <div className="space-y-3 py-2 text-xs">
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
                 <div className="flex justify-between">
                   <span className="font-bold text-slate-500">Ward Number:</span>
-                  <span className="font-bold text-slate-900">#{viewingWard.wardNumber || '-'}</span>
+                  <span className="font-bold text-slate-900">#{viewedWard.wardNumber || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-bold text-slate-500">Male Population:</span>
-                  <span className="font-semibold text-slate-800">{(viewingWard.malePopulation || 0).toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-blue-600">
+                    {(viewedMale || 0).toLocaleString('en-IN')}
+                    <span className="text-slate-500 font-medium">
+                      {' '}({toPercent(viewedMale, viewedTotal)}%)
+                    </span>
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-bold text-slate-500">Female Population:</span>
-                  <span className="font-semibold text-slate-800">{(viewingWard.femalePopulation || 0).toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-rose-500">
+                    {(viewedFemale || 0).toLocaleString('en-IN')}
+                    <span className="text-slate-500 font-medium">
+                      {' '}({toPercent(viewedFemale, viewedTotal)}%)
+                    </span>
+                  </span>
                 </div>
                 <div className="flex justify-between pt-1 border-t border-slate-200">
                   <span className="font-bold text-slate-700">Census 2011 Total:</span>
-                  <span className="font-black text-slate-900">{(viewingWard.census2011Population || 0).toLocaleString('en-IN')}</span>
+                  <span className="font-black text-slate-900">{viewed2011.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-bold text-orange-700">Census 2027 Projected:</span>
-                  <span className="font-black text-orange-600">{(viewingWard.census2027Population || 0).toLocaleString('en-IN')}</span>
+                  <span className="font-black text-orange-600">
+                    {viewed2027.toLocaleString('en-IN')}
+                    <span className="text-[11px] font-bold text-orange-500"> +{viewedGrowth}%</span>
+                  </span>
                 </div>
               </div>
+              <p className="text-[10px] text-slate-400 font-medium">
+                Figures &amp; percentages update automatically whenever Male / Female population changes.
+              </p>
             </div>
           )}
 

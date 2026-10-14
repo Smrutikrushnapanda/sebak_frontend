@@ -364,13 +364,15 @@ export default function UsersPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-extrabold text-slate-700">Mobile Number (Username) *</Label>
               <Input
-                type="tel"
                 placeholder="e.g. 9876543210"
+                inputMode="numeric"
+                maxLength={10}
                 value={formMobile}
-                onChange={(e) => setFormMobile(e.target.value)}
+                onChange={(e) => setFormMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 className="h-10 text-xs font-mono font-semibold rounded-md bg-slate-50/60 border-slate-200 focus:bg-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                 required
               />
+              <p className="text-[11px] font-semibold text-slate-400">10 digits only</p>
             </div>
 
             <div className="space-y-1.5">
