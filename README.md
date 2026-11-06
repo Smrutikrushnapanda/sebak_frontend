@@ -1,3 +1,9 @@
+## Sidebar regression tests
+
+After `npm install`, run `npm run build` and serve locally with `npx next start -p 3016`. Build from a separate source copy when dev server is active, since both commands otherwise share `.next` artifacts. Run `npm run test:browser` against that server; override `BROWSER_TEST_URL` for another localhost port. Tests intercept every backend API request and use fixture data, including deliberate mixed legacy responses.
+
+Default browser is installed macOS Google Chrome. Set `BROWSER_EXECUTABLE` to another Chromium executable when needed. Tests cover explicit workspace context, empty/error access, nested role assignment, account switching, collapse/drawer, and service-worker cleanup. Dashboard HTML, scripts and API responses are no longer cached by service worker; static images remain cached.
+
 # mla_organization_frontend
 
 

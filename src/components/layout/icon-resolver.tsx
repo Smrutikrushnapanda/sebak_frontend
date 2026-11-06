@@ -41,6 +41,8 @@ import {
   LuChartBar,
   LuActivity,
   LuTrendingUp,
+  LuCalendar,
+  LuShare2,
 } from 'react-icons/lu';
 import { HiOutlineUserGroup, HiOutlineBuildingOffice2 } from 'react-icons/hi2';
 
@@ -68,6 +70,8 @@ const iconMap: Record<string, React.ElementType> = {
   LuBarChart3: LuChartBar,
   LuActivity,
   LuTrendingUp,
+  LuCalendar,
+  LuShare2,
   HiOutlineUserGroup,
   HiOutlineBuildingOffice2,
 };

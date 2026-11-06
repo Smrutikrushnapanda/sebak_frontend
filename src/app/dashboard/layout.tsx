@@ -7,5 +7,5 @@ export default function DashboardRouteLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardShell>{children}</DashboardShell>;
+  return <DashboardShell dashboardContext="organization">{children}</DashboardShell>;
 }

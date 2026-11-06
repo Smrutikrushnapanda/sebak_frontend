@@ -30,7 +30,7 @@ export function middleware(request: NextRequest) {
   }
 
   // 2. Admin Web Routes Protection
-  if (pathname === '/login') {
+  if (pathname === '/login' || pathname === '/department-login') {
     if (hasAuth) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
@@ -67,5 +67,6 @@ export const config = {
     '/roles/:path*',
     '/users/:path*',
     '/login',
+    '/department-login',
   ],
 };

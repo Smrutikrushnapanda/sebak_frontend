@@ -3,7 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ApiClient } from '@/lib/api-client';
-import { getAllMenus } from '@/lib/menu-cache';
+import { getAllMenus, clearMenuCache } from '@/lib/menu-cache';
+import { flattenMenus, toggleMenuSelection } from '@/lib/menu-selection';
+import { MenuSelection } from '@/components/roles/menu-selection';
+import { useAuth } from '@/context/auth-context';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +43,8 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function RolesPage() {
+  const { refreshUser } = useAuth();
+  const [menuLoadError, setMenuLoadError] = useState(false);
   const [roles, setRoles] = useState<any[]>([]);
   const [permissions, setPermissions] = useState<any[]>([]);
   const [menus, setMenus] = useState<any[]>([]);
@@ -60,16 +65,18 @@ export default function RolesPage() {
 
   const loadData = async () => {
     setIsLoading(true);
+    setMenuLoadError(false);
     try {
       const [rolesRes, permRes, menuRes] = await Promise.all([
         ApiClient.get('roles'),
         ApiClient.get('permissions').catch(() => []),
-        getAllMenus(),
+        getAllMenus('organization'),
       ]);
       setRoles(rolesRes || []);
       setPermissions(permRes || []);
       setMenus(menuRes || []);
     } catch (err) {
+      setMenuLoadError(true);
       console.warn('Could not load roles data:', err);
     } finally {
       setIsLoading(false);
@@ -83,7 +90,8 @@ export default function RolesPage() {
   const handleOpenManage = (role: any) => {
     setSelectedRole(role);
     setSelectedPermissionKeys(role.permissions?.map((p: any) => p.key) || []);
-    setSelectedMenuIds(role.menus?.map((m: any) => m.id) || []);
+    const allowed = new Set(flattenMenus(menus).map((menu) => menu.id));
+    setSelectedMenuIds((role.menus || []).map((menu: any) => menu.id).filter((id: string) => allowed.has(id)));
     setRoleTab('permissions');
     setIsManageModalOpen(true);
   };
@@ -95,22 +103,23 @@ export default function RolesPage() {
   };
 
   const handleToggleMenu = (menuId: string) => {
-    setSelectedMenuIds((prev) =>
-      prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId],
-    );
+    setSelectedMenuIds((previous) => toggleMenuSelection(menus, previous, menuId));
   };
 
   const handleSaveRoleMatrix = async () => {
-    if (!selectedRole) return;
+    if (!selectedRole || menuLoadError) return;
     try {
       await Promise.all([
         ApiClient.put(`roles/${selectedRole.id}/permissions`, {
           permissionKeys: selectedPermissionKeys,
         }),
         ApiClient.put(`roles/${selectedRole.id}/menus`, {
+          dashboardType: 'organization',
           menuIds: selectedMenuIds,
         }),
       ]);
+      await refreshUser();
+      clearMenuCache();
       toast.success(`Role matrix for "${selectedRole.name}" updated`);
       setIsManageModalOpen(false);
       loadData();
@@ -356,35 +365,9 @@ export default function RolesPage() {
 
             {/* Menus Tab */}
             <TabsContent value="menus" className="mt-4 space-y-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-1">
-                {menus.map((menu) => {
-                  const isChecked = selectedMenuIds.includes(menu.id);
-                  return (
-                    <div
-                      key={menu.id}
-                      onClick={() => handleToggleMenu(menu.id)}
-                      className={cn(
-                        'p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-start space-x-2.5 select-none',
-                        isChecked
-                          ? 'border-orange-300 bg-[#fff5ee] shadow-2xs'
-                          : 'border-slate-200 hover:bg-slate-50',
-                      )}
-                    >
-                      <Checkbox
-                        checked={isChecked}
-                        onCheckedChange={() => handleToggleMenu(menu.id)}
-                        className="mt-0.5 border-orange-400 data-[state=checked]:bg-orange-500"
-                      />
-                      <div>
-                        <p className="font-extrabold text-slate-900">{menu.label}</p>
-                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                          {menu.path || 'Menu Group Header'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              {menuLoadError ? <p role="alert" className="text-sm text-red-600">Menu access could not be loaded. Reload before saving.</p> : (
+                <MenuSelection menus={menus} selectedIds={selectedMenuIds} onToggle={handleToggleMenu} />
+              )}
             </TabsContent>
           </Tabs>
 
@@ -392,7 +375,7 @@ export default function RolesPage() {
             <Button variant="outline" size="default" onClick={() => setIsManageModalOpen(false)} className="h-10 text-xs font-bold rounded-xl border-slate-200">
               Cancel
             </Button>
-            <Button size="default" onClick={handleSaveRoleMatrix} className="bg-[#f97316] hover:bg-[#ea580c] text-white font-extrabold text-xs h-10 px-5 rounded-xl shadow-2xs">
+            <Button size="default" disabled={menuLoadError} onClick={handleSaveRoleMatrix} className="bg-[#f97316] hover:bg-[#ea580c] text-white font-extrabold text-xs h-10 px-5 rounded-xl shadow-2xs">
               Save Role Settings
             </Button>
           </DialogFooter>

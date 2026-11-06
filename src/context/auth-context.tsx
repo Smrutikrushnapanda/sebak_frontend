@@ -3,6 +3,15 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { ApiClient } from '@/lib/api-client';
+import { clearMenuCache } from '@/lib/menu-cache';
+
+function clearNavigation() {
+  clearMenuCache();
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem('sebaka_active_workspace');
+    sessionStorage.removeItem('sebaka_workspace_cards');
+  }
+}
 
 export interface UserRole {
   id: string;
@@ -52,6 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const refreshUser = useCallback(async () => {
+    clearNavigation();
+    ApiClient.ensureAuthCookies();
     const token = ApiClient.getAccessToken();
     const refreshToken = ApiClient.getRefreshToken();
     if (!token && !refreshToken) {
@@ -79,13 +90,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     tokenData: { accessToken: string; refreshToken: string; user: User },
     redirectPath?: string,
   ) => {
+    clearNavigation();
     ApiClient.setAuthTokens(tokenData.accessToken, tokenData.refreshToken);
     setUser(tokenData.user);
     if (redirectPath) {
       router.push(redirectPath);
     } else {
       const isMobile = typeof window !== 'undefined' && window.location.pathname.startsWith('/mobile');
-      router.push(isMobile ? '/mobile' : '/dashboard');
+      router.push(isMobile ? '/mobile' : '/');
     }
   };
 
@@ -93,13 +105,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await ApiClient.post('auth/logout').catch(() => {});
     } finally {
+      clearNavigation();
       ApiClient.clearAuthTokens();
       setUser(null);
       if (typeof redirectPath === 'string') {
         router.push(redirectPath);
       } else {
         const isMobile = typeof window !== 'undefined' && window.location.pathname.startsWith('/mobile');
-        router.push(isMobile ? '/mobile/login' : '/login');
+        if (isMobile) {
+          router.push('/mobile/login');
+        } else {
+          window.location.href = 'http://localhost:5173/';
+        }
       }
     }
   };

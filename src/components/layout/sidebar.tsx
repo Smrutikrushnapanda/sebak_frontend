@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ApiClient } from '@/lib/api-client';
-import { getMenus } from '@/lib/menu-cache';
+import { getMenus, MenuItem, DashboardContext, MENU_CACHE_EVENT, clearMenuCache } from '@/lib/menu-cache';
 import { useConstituencySettings } from '@/context/settings-context';
 import { useAuth } from '@/context/auth-context';
 import { useSidebar } from '@/context/sidebar-context';
@@ -17,54 +16,97 @@ import {
   LuPanelLeftClose,
   LuPanelLeftOpen,
   LuX,
+  LuArrowLeftRight,
 } from 'react-icons/lu';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { fallbackMenus, MenuItem } from '@/lib/menu-cache';
-
-export function Sidebar() {
+export function Sidebar({ dashboardContext }: { dashboardContext: DashboardContext }) {
   const pathname = usePathname();
   const { settings, label, representativeType, portalName } = useConstituencySettings();
   const { user } = useAuth();
   const { isOpen, isCollapsed, toggleCollapsed, setIsOpen } = useSidebar();
-  const [menus, setMenus] = useState<MenuItem[]>(fallbackMenus);
-  const [openGroup, setOpenGroup] = useState<string | null>('Organization');
+
+  const userKey = user ? `${user.id}:${user.roleId}:${(user.role?.menus || []).map((menu) => menu.id).sort().join(',')}` : '';
+  const requestKey = `${userKey}:${dashboardContext}`;
+  const [navigation, setNavigation] = useState<{ key: string; menus: MenuItem[]; loading: boolean; error: boolean }>({
+    key: '', menus: [], loading: true, error: false,
+  });
+  const [revision, setRevision] = useState(0);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const menus = navigation.key === requestKey ? navigation.menus : [];
 
   useEffect(() => {
-    getMenus().then(setMenus);
+    const reload = () => setRevision((value) => value + 1);
+    const refresh = () => clearMenuCache();
+    const visible = () => { if (document.visibilityState === 'visible') refresh(); };
+    window.addEventListener(MENU_CACHE_EVENT, reload);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', visible);
+    return () => {
+      window.removeEventListener(MENU_CACHE_EVENT, reload);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', visible);
+    };
   }, []);
+
+  useEffect(() => {
+    let current = true;
+    setNavigation({ key: requestKey, menus: [], loading: true, error: false });
+    if (!userKey) return;
+    getMenus(dashboardContext, userKey).then((loaded) => {
+      if (current) setNavigation({ key: requestKey, menus: loaded, loading: false, error: false });
+    }).catch(() => {
+      if (current) setNavigation({ key: requestKey, menus: [], loading: false, error: true });
+    });
+    return () => { current = false; };
+  }, [dashboardContext, userKey, requestKey, revision]);
 
   // Auto-expand group containing the current active pathname
   useEffect(() => {
     if (menus.length > 0) {
       const activeParent = menus.find((m) =>
-        m.children?.some((c) => c.path && (c.path === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(c.path)))
+        m.children?.some(
+          (c) => c.path && (pathname === c.path || (c.path !== '/' && pathname.startsWith(c.path))),
+        ),
       );
       if (activeParent) {
-        setOpenGroup(activeParent.label);
+        setOpenGroup(activeParent.id);
       }
     }
   }, [pathname, menus]);
 
-  const toggleGroup = (groupLabel: string) => {
-    setOpenGroup((prev) => (prev === groupLabel ? null : groupLabel));
+  const toggleGroup = (id: string) => {
+    setOpenGroup((prev) => (prev === id ? null : id));
   };
 
-  const isActive = (path?: string) => {
+  const isActive = (path?: string | null) => {
     if (!path) return false;
+    if (path === '/internal/dashboard') return pathname === '/internal/dashboard';
     if (path === '/dashboard') return pathname === '/dashboard';
-    return pathname.startsWith(path);
+    return pathname === path || (path !== '/' && pathname.startsWith(path));
   };
+
+  const dashboardHome = dashboardContext === 'internal' ? '/internal/dashboard' : '/dashboard';
 
   const renderNavList = () => (
     <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+      {(navigation.key !== requestKey || navigation.loading) && <p role="status" className="p-3 text-xs text-slate-500">Loading navigation...</p>}
+      {navigation.key === requestKey && navigation.error && (
+        <div role="alert" className="p-3 text-xs text-slate-600">
+          <p>Could not load navigation.</p>
+          <button type="button" onClick={() => clearMenuCache()} className="mt-2 font-bold text-orange-600">Retry</button>
+        </div>
+      )}
+      {navigation.key === requestKey && !navigation.loading && !navigation.error && menus.length === 0 && (
+        <p className="p-3 text-xs text-slate-500">No menu access for this dashboard.</p>
+      )}
       {menus.map((item) => {
         const hasChildren = item.children && item.children.length > 0;
 
         if (hasChildren) {
-          const isGroupOpen = openGroup === item.label;
+          const isGroupOpen = openGroup === item.id;
           const isAnyChildActive = item.children?.some((c) => isActive(c.path));
 
           if (isCollapsed) {
@@ -91,7 +133,7 @@ export function Sidebar() {
             <div key={item.id} className="space-y-1">
               <button
                 type="button"
-                onClick={() => toggleGroup(item.label)}
+                onClick={() => toggleGroup(item.id)}
                 className={cn(
                   'w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-sm font-semibold transition-all select-none',
                   isAnyChildActive
@@ -113,25 +155,22 @@ export function Sidebar() {
                       cn('w-4 h-4', isAnyChildActive ? 'text-white' : 'text-[#f97316]'),
                     )}
                   </div>
-                  <span className={cn('tracking-tight text-sm', isAnyChildActive ? 'font-extrabold text-[#f97316]' : 'font-semibold text-[#2a3c66]')}>
+                  <span
+                    className={cn(
+                      'tracking-tight text-sm',
+                      isAnyChildActive ? 'font-extrabold text-[#f97316]' : 'font-semibold text-[#2a3c66]',
+                    )}
+                  >
                     {item.label}
                   </span>
                 </div>
-                {isGroupOpen ? (
-                  <LuChevronDown
-                    className={cn(
-                      'w-4 h-4 transition-transform duration-200 rotate-180',
-                      isAnyChildActive ? 'text-[#f97316]' : 'text-[#2a3c66]',
-                    )}
-                  />
-                ) : (
-                  <LuChevronDown
-                    className={cn(
-                      'w-4 h-4 transition-transform duration-200',
-                      isAnyChildActive ? 'text-[#f97316]' : 'text-[#2a3c66]',
-                    )}
-                  />
-                )}
+                <LuChevronDown
+                  className={cn(
+                    'w-4 h-4 transition-transform duration-200',
+                    isGroupOpen && 'rotate-180',
+                    isAnyChildActive ? 'text-[#f97316]' : 'text-[#2a3c66]',
+                  )}
+                />
               </button>
 
               {isGroupOpen && (
@@ -214,7 +253,12 @@ export function Sidebar() {
                   cn('w-4 h-4', active ? 'text-white' : 'text-[#f97316]'),
                 )}
               </div>
-              <span className={cn('tracking-tight text-sm', active ? 'font-extrabold text-white' : 'font-semibold text-[#2a3c66]')}>
+              <span
+                className={cn(
+                  'tracking-tight text-sm',
+                  active ? 'font-extrabold text-white' : 'font-semibold text-[#2a3c66]',
+                )}
+              >
                 {item.label}
               </span>
             </div>
@@ -235,7 +279,7 @@ export function Sidebar() {
       )}
 
       {/* Sidebar Container */}
-      <aside
+      <aside aria-label="Dashboard navigation" data-dashboard={dashboardContext}
         className={cn(
           'bg-white border-r border-slate-200/90 flex flex-col shrink-0 h-screen sticky top-0 shadow-sm z-50 select-none overflow-hidden transition-all duration-300',
           // Desktop collapsed vs expanded
@@ -263,7 +307,7 @@ export function Sidebar() {
             </div>
           ) : (
             <div className="flex items-center justify-between w-full gap-2">
-              <Link href="/dashboard" className="flex items-center space-x-2.5 overflow-hidden">
+              <Link href={dashboardHome} className="flex items-center space-x-2.5 overflow-hidden">
                 <div className="w-11 h-11 shrink-0 flex items-center justify-center overflow-hidden">
                   <img
                     src="/images/lotus-img.png"
@@ -297,10 +341,35 @@ export function Sidebar() {
           )}
         </div>
 
+        {/* Workspace Pill & Switcher */}
+        {!isCollapsed && (
+          <div className="px-3 pt-2.5 pb-1">
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className={cn(
+                    'w-2 h-2 rounded-full shrink-0',
+                    dashboardContext === 'internal' ? 'bg-blue-500' : 'bg-emerald-500',
+                  )}
+                />
+                <span className="font-bold text-slate-700 truncate text-[11px] uppercase tracking-wider">
+                  {dashboardContext === 'internal' ? 'Internal Desk' : 'Organization Desk'}
+                </span>
+              </div>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#f97316] hover:text-orange-700 shrink-0 ml-1 transition-colors"
+                title="Switch Workspace"
+              >
+                <LuArrowLeftRight className="w-3 h-3" />
+                <span>Switch</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Navigation List */}
         {renderNavList()}
-
-
 
         {/* Sidebar Footer / Collapse Toggle */}
         <div className="p-3.5 border-t border-slate-100 bg-white flex items-center justify-between">

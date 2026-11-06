@@ -49,6 +49,19 @@ export class ApiClient {
     }
   }
 
+  /** Keep middleware-readable cookies in sync when tokens exist only in localStorage. */
+  static ensureAuthCookies() {
+    if (typeof window === 'undefined') return;
+    const accessToken = localStorage.getItem('mla_access_token');
+    const refreshToken = localStorage.getItem('mla_refresh_token');
+    if (accessToken) {
+      setCookie('mla_access_token', accessToken, { maxAge: 60 * 60 * 24 * 7, path: '/' });
+    }
+    if (refreshToken) {
+      setCookie('mla_refresh_token', refreshToken, { maxAge: 60 * 60 * 24 * 30, path: '/' });
+    }
+  }
+
   static clearAuthTokens() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('mla_access_token');

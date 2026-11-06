@@ -1,79 +1,31 @@
-const CACHE_NAME = 'korei-sevaka-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/mobile/dashboard',
-  '/manifest.json',
-  '/icon.svg',
-  '/images/lotus-img.png',
-  '/images/webapp-banner.png',
-  '/images/akash_profile.jpeg'
-];
+const CACHE_NAME = 'korei-sevaka-static-v2';
+const STATIC_ASSETS = ['/manifest.json', '/icon.svg', '/images/lotus-img.png', '/images/webapp-banner.png', '/images/akash_profile.jpeg'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
-        // Continue even if some optional assets fail to cache immediately
-      });
-    })
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => {})));
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
-  );
-  self.clients.claim();
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((key) => key.startsWith('korei-sevaka-') && key !== CACHE_NAME).map((key) => caches.delete(key)));
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener('fetch', (event) => {
-  // Pass through non-GET and API requests directly to network
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached version and update cache in background
-        fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, networkResponse);
-              });
-            }
-          })
-          .catch(() => {});
-        return cachedResponse;
-      }
-
-      return fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
-        })
-        .catch(() => {
-          // If offline and navigating to a page, serve cached dashboard if available
-          if (event.request.mode === 'navigate') {
-            return caches.match('/mobile/dashboard');
-          }
-        });
-    })
-  );
+  const url = new URL(event.request.url);
+  // Authenticated HTML, Next navigation responses, scripts, and API data stay on network.
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin ||
+    event.request.mode === 'navigate' || url.searchParams.has('_rsc') ||
+    !(url.pathname.startsWith('/images/') || STATIC_ASSETS.includes(url.pathname))) return;
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const saved = await cache.match(event.request);
+    if (saved) return saved;
+    const response = await fetch(event.request);
+    if (response.ok && response.type === 'basic') await cache.put(event.request, response.clone());
+    return response;
+  })());
 });

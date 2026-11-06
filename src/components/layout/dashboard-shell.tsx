@@ -5,17 +5,18 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { SidebarProvider } from '@/context/sidebar-context';
 import { Sidebar } from '@/components/layout/sidebar';
+import { DashboardContext } from '@/lib/menu-cache';
 import { Topbar } from '@/components/layout/topbar';
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+export function DashboardShell({ children, dashboardContext }: { children: React.ReactNode; dashboardContext: DashboardContext }) {
   const { isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      window.location.href = 'http://localhost:5173/';
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -35,9 +36,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex h-screen min-w-0 overflow-hidden bg-slate-50 text-slate-900">
-        <Sidebar />
+        <Sidebar key={dashboardContext} dashboardContext={dashboardContext} />
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-          <Topbar />
+          <Topbar dashboardContext={dashboardContext} />
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-7">
             <div className="max-w-7xl w-full min-w-0 mx-auto">{children}</div>
           </main>

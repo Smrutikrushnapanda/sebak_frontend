@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   React.useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
-      router.replace('/dashboard');
+      router.replace('/');
     }
   }, [isAuthLoading, isAuthenticated, router]);
 

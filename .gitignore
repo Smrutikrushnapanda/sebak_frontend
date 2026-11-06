@@ -24,3 +24,10 @@ next-env.d.ts
 
 # Mac
 __MACOSX/
+
+# Seeders & scripts
+**/seed.ts
+**/seed-*.ts
+**/seed-*.js
+**/seeds/
+**/scripts/

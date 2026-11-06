@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { DashboardContext } from '@/lib/menu-cache';
 import { useAuth } from '@/context/auth-context';
 import { useConstituencySettings } from '@/context/settings-context';
 import { useSidebar } from '@/context/sidebar-context';
@@ -29,7 +30,7 @@ import {
   LuPanelLeftOpen,
 } from 'react-icons/lu';
 
-export function Topbar() {
+export function Topbar({ dashboardContext }: { dashboardContext: DashboardContext }) {
   const { user, logout } = useAuth();
   const { settings, representativeType } = useConstituencySettings();
   const { isCollapsed, toggleCollapsed, toggleOpen } = useSidebar();
@@ -153,7 +154,7 @@ export function Topbar() {
             
             <DropdownMenuSeparator className="my-1" />
 
-            <DropdownMenuItem asChild>
+            {dashboardContext === 'organization' && <DropdownMenuItem asChild>
               <Link
                 href="/settings"
                 className="flex items-center space-x-2.5 px-2.5 py-2 text-sm text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 rounded-lg cursor-pointer"
@@ -161,7 +162,7 @@ export function Topbar() {
                 <LuSettings className="w-4 h-4 text-primary-600" />
                 <span className="font-medium">Constituency Settings</span>
               </Link>
-            </DropdownMenuItem>
+            </DropdownMenuItem>}
 
             <DropdownMenuSeparator className="my-1" />
 
